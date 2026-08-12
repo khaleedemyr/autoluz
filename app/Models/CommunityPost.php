@@ -18,6 +18,7 @@ class CommunityPost extends Model
         'vehicle_id',
         'body',
         'image_path',
+        'video_path',
         'likes_count',
         'replies_count',
         'is_hidden',
@@ -93,6 +94,19 @@ class CommunityPost extends Model
         }
 
         return url('/storage/'.$this->image_path);
+    }
+
+    public function videoUrl(): ?string
+    {
+        if (! $this->video_path) {
+            return null;
+        }
+
+        if (str_starts_with($this->video_path, 'http://') || str_starts_with($this->video_path, 'https://')) {
+            return $this->video_path;
+        }
+
+        return url('/storage/'.$this->video_path);
     }
 
     public function rootId(): int
@@ -173,6 +187,7 @@ class CommunityPost extends Model
             'id' => $this->id,
             'body' => $this->body,
             'image_url' => $this->imageUrl(),
+            'video_url' => $this->videoUrl(),
             'likes_count' => (int) $this->likes_count,
             'replies_count' => (int) $this->replies_count,
             'liked_by_me' => $viewerId && $this->relationLoaded('likes')

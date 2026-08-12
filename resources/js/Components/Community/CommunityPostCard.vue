@@ -198,6 +198,19 @@ function onChildReplied() {
                     <img :src="post.image_url" alt="" class="max-h-96 w-full object-cover" loading="lazy" />
                 </Link>
 
+                <div
+                    v-if="post.video_url"
+                    class="mt-3 overflow-hidden rounded-2xl border border-[var(--line)] bg-black"
+                >
+                    <video
+                        :src="post.video_url"
+                        controls
+                        playsinline
+                        preload="metadata"
+                        class="max-h-96 w-full object-contain"
+                    />
+                </div>
+
                 <div class="mt-3 flex items-center gap-5">
                     <CommunityLikeButton :post="post" />
 

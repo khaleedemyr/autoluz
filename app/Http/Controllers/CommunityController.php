@@ -168,6 +168,7 @@ class CommunityController extends Controller
         $data = $request->validate([
             'body' => ['required', 'string', 'max:500'],
             'image' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:5120'],
+            'video' => ['nullable', 'file', 'mimes:mp4,webm,mov,qt', 'max:25600'],
             'group_id' => ['nullable', 'integer', 'exists:community_groups,id'],
             'article_id' => ['nullable', 'integer', 'exists:articles,id'],
             'event_id' => ['nullable', 'integer', 'exists:events,id'],
@@ -183,13 +184,9 @@ class CommunityController extends Controller
         }
 
         $tags = $this->resolvePublishedTags($data);
+        [$imagePath, $videoPath] = $this->storeCommunityMedia($request);
 
-        $imagePath = null;
-        if ($request->hasFile('image')) {
-            $imagePath = $request->file('image')->store('community/posts', 'public');
-        }
-
-        $post = DB::transaction(function () use ($user, $data, $imagePath, $group, $tags) {
+        $post = DB::transaction(function () use ($user, $data, $imagePath, $videoPath, $group, $tags) {
             $post = CommunityPost::create([
                 'user_id' => $user->id,
                 'group_id' => $group?->id,
@@ -198,6 +195,7 @@ class CommunityController extends Controller
                 'vehicle_id' => $tags['vehicle_id'],
                 'body' => trim($data['body']),
                 'image_path' => $imagePath,
+                'video_path' => $videoPath,
             ]);
 
             if ($group) {
@@ -321,21 +319,18 @@ class CommunityController extends Controller
         $data = $request->validate([
             'body' => ['required', 'string', 'max:500'],
             'image' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:5120'],
+            'video' => ['nullable', 'file', 'mimes:mp4,webm,mov,qt', 'max:25600'],
             'article_id' => ['nullable', 'integer', 'exists:articles,id'],
             'event_id' => ['nullable', 'integer', 'exists:events,id'],
             'vehicle_id' => ['nullable', 'integer', 'exists:vehicles,id'],
         ]);
 
         $tags = $this->resolvePublishedTags($data);
-
-        $imagePath = null;
-        if ($request->hasFile('image')) {
-            $imagePath = $request->file('image')->store('community/posts', 'public');
-        }
+        [$imagePath, $videoPath] = $this->storeCommunityMedia($request);
 
         $reply = null;
 
-        DB::transaction(function () use ($request, $parent, $root, $data, $imagePath, $tags, &$reply) {
+        DB::transaction(function () use ($request, $parent, $root, $data, $imagePath, $videoPath, $tags, &$reply) {
             $reply = CommunityPost::create([
                 'user_id' => $request->user()->id,
                 'parent_id' => $parent->id,
@@ -345,6 +340,7 @@ class CommunityController extends Controller
                 'vehicle_id' => $tags['vehicle_id'],
                 'body' => trim($data['body']),
                 'image_path' => $imagePath,
+                'video_path' => $videoPath,
             ]);
 
             $parent->increment('replies_count');
@@ -358,6 +354,23 @@ class CommunityController extends Controller
         return redirect()
             ->route('community.show', $root->id)
             ->with('success', __('Balasan terkirim.'));
+    }
+
+    /**
+     * @return array{0: ?string, 1: ?string}
+     */
+    private function storeCommunityMedia(Request $request): array
+    {
+        $imagePath = null;
+        $videoPath = null;
+
+        if ($request->hasFile('video')) {
+            $videoPath = $request->file('video')->store('community/videos', 'public');
+        } elseif ($request->hasFile('image')) {
+            $imagePath = $request->file('image')->store('community/posts', 'public');
+        }
+
+        return [$imagePath, $videoPath];
     }
 
     /**
@@ -444,6 +457,9 @@ class CommunityController extends Controller
         DB::transaction(function () use ($post, $parentId, $rootId) {
             if ($post->image_path && ! str_starts_with($post->image_path, 'http')) {
                 Storage::disk('public')->delete($post->image_path);
+            }
+            if ($post->video_path && ! str_starts_with($post->video_path, 'http')) {
+                Storage::disk('public')->delete($post->video_path);
             }
 
             if ($parentId) {

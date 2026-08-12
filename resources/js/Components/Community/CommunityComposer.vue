@@ -4,6 +4,7 @@ import { useForm, usePage } from '@inertiajs/vue3';
 import axios from 'axios';
 import CommunityEmojiPicker from '@/Components/Community/CommunityEmojiPicker.vue';
 import { applyEmoticons } from '@/utils/communityEmoji';
+import { compressCommunityVideo } from '@/utils/compressCommunityVideo';
 import { swalToast, swalWarning } from '@/utils/swal';
 import { useI18n } from '@/composables/useI18n';
 
@@ -23,8 +24,12 @@ const { t } = useI18n();
 const page = usePage();
 const user = computed(() => page.props.auth?.user || null);
 const preview = ref(null);
+const videoPreview = ref(null);
 const fileInput = ref(null);
+const videoInput = ref(null);
 const textarea = ref(null);
+const videoCompressing = ref(false);
+const videoProgress = ref(0);
 
 const tagPanel = ref(null); // 'article' | 'event' | 'vehicle' | null
 const tagQuery = ref('');
@@ -52,6 +57,7 @@ const tagSearchPlaceholder = computed(() => {
 const form = useForm({
     body: '',
     image: null,
+    video: null,
     group_id: props.groupId,
     article_id: null,
     event_id: null,
@@ -65,14 +71,22 @@ const resolvedPlaceholder = computed(() => {
     return props.placeholder || t('community_compose_ph');
 });
 const resolvedLabel = computed(() => props.submitLabel || t('community_post'));
+const compressLabel = computed(() =>
+    t('community_video_compressing', { pct: Math.round(videoProgress.value * 100) }),
+);
+
+function revokePreview(urlRef) {
+    if (urlRef.value) {
+        URL.revokeObjectURL(urlRef.value);
+        urlRef.value = null;
+    }
+}
 
 function onFileChange(e) {
     const file = e.target.files?.[0] || null;
+    clearVideo();
     form.image = file;
-    if (preview.value) {
-        URL.revokeObjectURL(preview.value);
-        preview.value = null;
-    }
+    revokePreview(preview);
     if (file) {
         preview.value = URL.createObjectURL(file);
     }
@@ -80,12 +94,55 @@ function onFileChange(e) {
 
 function clearImage() {
     form.image = null;
-    if (preview.value) {
-        URL.revokeObjectURL(preview.value);
-        preview.value = null;
-    }
+    revokePreview(preview);
     if (fileInput.value) {
         fileInput.value.value = '';
+    }
+}
+
+function videoErrorMessage(code) {
+    if (code === 'TOO_LARGE') return t('community_video_too_large');
+    if (code === 'TOO_LONG') return t('community_video_too_long');
+    if (code === 'STILL_TOO_LARGE') return t('community_video_still_large');
+    return t('community_video_failed');
+}
+
+async function onVideoChange(e) {
+    const file = e.target.files?.[0] || null;
+    if (!file) return;
+
+    clearImage();
+    clearVideo({ keepInput: true });
+    videoCompressing.value = true;
+    videoProgress.value = 0;
+
+    try {
+        const compressed = await compressCommunityVideo(file, {
+            onProgress: (ratio) => {
+                videoProgress.value = ratio;
+            },
+        });
+        form.video = compressed;
+        videoPreview.value = URL.createObjectURL(compressed);
+    } catch (err) {
+        form.video = null;
+        const code = err instanceof Error ? err.message : 'ENCODE_FAILED';
+        swalToast(videoErrorMessage(code), { icon: 'error' });
+        if (videoInput.value) {
+            videoInput.value.value = '';
+        }
+    } finally {
+        videoCompressing.value = false;
+    }
+}
+
+function clearVideo({ keepInput = false } = {}) {
+    form.video = null;
+    revokePreview(videoPreview);
+    videoProgress.value = 0;
+    videoCompressing.value = false;
+    if (!keepInput && videoInput.value) {
+        videoInput.value.value = '';
     }
 }
 
@@ -203,9 +260,10 @@ function submit() {
         forceFormData: true,
         preserveScroll: true,
         onSuccess: () => {
-            form.reset('body', 'image', 'article_id', 'event_id', 'vehicle_id');
+            form.reset('body', 'image', 'video', 'article_id', 'event_id', 'vehicle_id');
             form.group_id = props.groupId;
             clearImage();
+            clearVideo();
             clearArticle();
             clearEvent();
             clearVehicle();
@@ -216,6 +274,7 @@ function submit() {
             const msg =
                 form.errors.body ||
                 form.errors.image ||
+                form.errors.video ||
                 form.errors.article_id ||
                 form.errors.event_id ||
                 form.errors.vehicle_id ||
@@ -295,6 +354,31 @@ onUnmounted(() => clearTimeout(tagDebounce));
                     </button>
                 </div>
                 <p v-if="form.errors.image" class="mt-1 text-xs text-red-600">{{ form.errors.image }}</p>
+
+                <div v-if="videoPreview || videoCompressing" class="relative mt-3 overflow-hidden rounded-2xl border border-[var(--line)]">
+                    <video
+                        v-if="videoPreview"
+                        :src="videoPreview"
+                        controls
+                        playsinline
+                        class="max-h-72 w-full bg-black object-contain"
+                    />
+                    <div
+                        v-if="videoCompressing"
+                        class="flex items-center justify-center bg-mist/80 px-4 py-10 text-sm text-charcoal/70"
+                    >
+                        {{ compressLabel }}
+                    </div>
+                    <button
+                        v-if="videoPreview && !videoCompressing"
+                        type="button"
+                        class="absolute right-3 top-3 rounded-full bg-charcoal/80 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-white"
+                        @click="clearVideo"
+                    >
+                        {{ t('community_remove_video') }}
+                    </button>
+                </div>
+                <p v-if="form.errors.video" class="mt-1 text-xs text-red-600">{{ form.errors.video }}</p>
 
                 <div
                     v-if="canTag && (selectedArticle || selectedEvent || selectedVehicle)"
@@ -456,6 +540,24 @@ onUnmounted(() => clearTimeout(tagDebounce));
                             {{ t('community_add_photo') }}
                         </label>
 
+                        <label
+                            class="inline-flex cursor-pointer items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] transition"
+                            :class="videoCompressing ? 'pointer-events-none text-charcoal/35' : 'text-charcoal/55 hover:text-brand'"
+                        >
+                            <input
+                                ref="videoInput"
+                                type="file"
+                                accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov"
+                                class="hidden"
+                                :disabled="videoCompressing"
+                                @change="onVideoChange"
+                            />
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            </svg>
+                            {{ t('community_add_video') }}
+                        </label>
+
                         <template v-if="canTag">
                             <button
                                 type="button"
@@ -496,7 +598,7 @@ onUnmounted(() => clearTimeout(tagDebounce));
                     <button
                         type="submit"
                         class="rounded-full bg-brand px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-white transition hover:opacity-90 disabled:opacity-40"
-                        :disabled="form.processing || !form.body.trim()"
+                        :disabled="form.processing || videoCompressing || !form.body.trim()"
                     >
                         {{ resolvedLabel }}
                     </button>
