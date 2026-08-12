@@ -6,7 +6,9 @@ use App\Models\RedirectMap;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
+use Throwable;
 
 class CheckRedirectMaps
 {
@@ -16,37 +18,48 @@ class CheckRedirectMaps
             return $next($request);
         }
 
-        $raw = $request->getPathInfo() ?: '/';
-        $normalized = '/'.ltrim($raw, '/');
-        $candidates = array_values(array_unique([
-            $raw,
-            $normalized,
-            rtrim($normalized, '/') ?: '/',
-        ]));
+        try {
+            $raw = $request->getPathInfo() ?: '/';
+            $normalized = '/'.ltrim($raw, '/');
+            $candidates = array_values(array_unique([
+                $raw,
+                $normalized,
+                rtrim($normalized, '/') ?: '/',
+            ]));
 
-        $map = Cache::remember('autoluz.redirect_maps.v1', 300, function () {
-            return RedirectMap::query()
-                ->active()
-                ->get(['from_path', 'to_path', 'status_code'])
-                ->keyBy('from_path');
-        });
+            // Cache plain arrays only — never Eloquent collections (breaks unserialize).
+            /** @var array<string, array{to_path: string, status_code: int}> $map */
+            $map = Cache::remember('autoluz.redirect_maps.v2', 300, function () {
+                return RedirectMap::query()
+                    ->active()
+                    ->get(['from_path', 'to_path', 'status_code'])
+                    ->mapWithKeys(fn (RedirectMap $row) => [
+                        (string) $row->from_path => [
+                            'to_path' => (string) $row->to_path,
+                            'status_code' => (int) ($row->status_code ?: 301),
+                        ],
+                    ])
+                    ->all();
+            });
 
-        $redirect = null;
-        foreach ($candidates as $candidate) {
-            if ($map->has($candidate)) {
-                $redirect = $map->get($candidate);
-                break;
+            foreach ($candidates as $candidate) {
+                if (! isset($map[$candidate])) {
+                    continue;
+                }
+
+                $target = $map[$candidate]['to_path'];
+                $status = $map[$candidate]['status_code'] ?: 301;
+
+                if (! str_starts_with($target, 'http://') && ! str_starts_with($target, 'https://')) {
+                    $target = url($target);
+                }
+
+                return redirect()->to($target, $status);
             }
-        }
-
-        if ($redirect) {
-            $target = $redirect->to_path;
-
-            if (! str_starts_with($target, 'http://') && ! str_starts_with($target, 'https://')) {
-                $target = url($target);
-            }
-
-            return redirect()->to($target, $redirect->status_code ?: 301);
+        } catch (Throwable $e) {
+            Log::warning('redirect_maps lookup failed', [
+                'message' => $e->getMessage(),
+            ]);
         }
 
         return $next($request);
