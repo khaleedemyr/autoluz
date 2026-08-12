@@ -111,3 +111,9 @@ Fitur admin:
 - CRUD Artikel (judul, slug, excerpt, HTML, kategori, status, featured image, featured flag)
 - CRUD Kategori
 - CRUD Video YouTube
+
+
+sync tiap pull
+
+rm -rf ~/domains/autoluz.id/public_html/build
+cp -a ~/domains/autoluz.id/app/public/build ~/domains/autoluz.id/public_html/build

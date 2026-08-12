@@ -5,13 +5,28 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import BrandLogo from '@/Components/Site/BrandLogo.vue';
 import VehicleCard from '@/Components/Site/VehicleCard.vue';
 import CompareToggleButton from '@/Components/Site/CompareToggleButton.vue';
+import CreditSimCalculator from '@/Components/Site/CreditSimCalculator.vue';
 import { useI18n } from '@/composables/useI18n';
 
 const props = defineProps({
     brand: { type: Object, required: true },
     vehicle: { type: Object, required: true },
     related: { type: Array, default: () => [] },
+    creditDefaults: {
+        type: Object,
+        default: () => ({
+            dp_percent: 20,
+            tenor: 36,
+            rate: 5.5,
+            method: 'flat',
+            tenor_options: [12, 24, 36, 48, 60],
+        }),
+    },
 });
+
+const vehicleCreditMeta = computed(() =>
+    [props.brand?.name, props.vehicle?.body_type, props.vehicle?.model_year].filter(Boolean).join(' · '),
+);
 
 const { t } = useI18n();
 const activeIndex = ref(0);
@@ -104,8 +119,15 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey));
                         <p v-if="vehicle.price_label" class="mt-4 text-lg font-semibold">
                             {{ t('vehicles_from') }} {{ vehicle.price_label }}
                         </p>
-                        <div class="mt-4">
+                        <div class="mt-4 flex flex-wrap gap-2">
                             <CompareToggleButton :vehicle="vehicle" />
+                            <Link
+                                v-if="vehicle.price_from"
+                                :href="route('credit.simulate', { vehicle: vehicle.id })"
+                                class="inline-flex items-center rounded-full border border-charcoal/15 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-charcoal transition hover:border-brand hover:text-brand"
+                            >
+                                {{ t('credit_nav') }}
+                            </Link>
                         </div>
                     </div>
                 </div>
@@ -197,6 +219,22 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey));
                             </div>
                         </dl>
                         <p v-else class="mt-3 text-sm text-neutral-500">{{ t('vehicles_specs_empty') }}</p>
+                    </div>
+
+                    <div v-if="vehicle.price_from" class="rounded-2xl border border-[var(--line)] bg-white p-5 shadow-soft">
+                        <h2 class="text-[11px] font-semibold uppercase tracking-[0.16em] text-neutral-400">
+                            {{ t('credit_widget_title') }}
+                        </h2>
+                        <div class="mt-4">
+                            <CreditSimCalculator
+                                compact
+                                :initial-price="vehicle.price_from"
+                                :vehicle-id="vehicle.id"
+                                :vehicle-name="vehicle.name"
+                                :vehicle-meta="vehicleCreditMeta"
+                                :defaults="creditDefaults"
+                            />
+                        </div>
                     </div>
                 </aside>
             </div>

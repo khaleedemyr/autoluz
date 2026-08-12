@@ -38,6 +38,13 @@ class VehicleController extends Controller
             'brand' => $brand->toCardArray(),
             'vehicle' => $vehicle->toDetailArray(),
             'related' => $related,
+            'creditDefaults' => [
+                'dp_percent' => (float) config('credit.default_dp_percent', 20),
+                'tenor' => (int) config('credit.default_tenor', 36),
+                'rate' => (float) config('credit.default_rate', 5.5),
+                'method' => (string) config('credit.default_method', 'flat'),
+                'tenor_options' => array_values(config('credit.tenor_options', [12, 24, 36, 48, 60])),
+            ],
         ]);
     }
 }

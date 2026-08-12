@@ -86,6 +86,7 @@ class VehicleCompareController extends Controller
                 'name' => $vehicle->name,
                 'body_type' => $vehicle->body_type,
                 'model_year' => $vehicle->model_year,
+                'price_from' => $vehicle->price_from,
                 'price_label' => $vehicle->priceLabel(),
                 'cover_image_url' => $vehicle->toCardArray()['cover_image_url'],
                 'brand' => [

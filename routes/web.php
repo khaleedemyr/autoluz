@@ -32,6 +32,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SitemapController;
+use App\Http\Controllers\CreditSimulationController;
 use App\Http\Controllers\VehicleController;
 use App\Http\Controllers\VehicleCompareController;
 use Illuminate\Support\Facades\Route;
@@ -67,6 +68,7 @@ Route::get('/bandingkan', [VehicleCompareController::class, 'index'])->name('veh
 Route::get('/bandingkan/cari', [VehicleCompareController::class, 'search'])
     ->middleware('throttle:60,1')
     ->name('vehicles.compare.search');
+Route::get('/simulasi-kredit', [CreditSimulationController::class, 'index'])->name('credit.simulate');
 Route::get('/galeri', [GalleryController::class, 'index'])->name('galleries.index');
 Route::get('/galeri/{slug}', [GalleryController::class, 'show'])->name('galleries.show');
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
