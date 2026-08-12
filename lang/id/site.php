@@ -78,6 +78,7 @@ return [
     'video_title' => 'Video Stage',
     'video_from' => 'Konten eksklusif dari channel',
     'video_open_youtube' => 'Buka YouTube',
+    'video_play' => 'Putar video',
     'video_empty' => 'Belum ada video dari channel. Coba refresh feed di admin atau cek',
     'footer_tagline' => 'Portal editorial otomotif modern untuk berita mobil, motor, review, dan tips berkendara.',
     'footer_categories' => 'Kategori',

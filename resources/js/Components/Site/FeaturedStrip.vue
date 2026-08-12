@@ -31,6 +31,9 @@ const { t, formatDate } = useI18n();
                         :src="main.featured_image_url"
                         :alt="main.title"
                         class="h-full w-full object-cover transition duration-700 ease-editorial group-hover:scale-105"
+                        loading="eager"
+                        fetchpriority="high"
+                        decoding="async"
                     />
                     <div v-else class="h-full w-full bg-charcoal-mute" />
                 </div>

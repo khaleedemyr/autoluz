@@ -5,9 +5,14 @@ import { createInertiaApp, router } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createApp, h } from 'vue';
 import { ZiggyVue } from '../../vendor/tightenco/ziggy';
-import { swalToast } from './utils/swal';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Autoluz';
+
+async function flashSuccess(message) {
+    if (!message) return;
+    const { swalToast } = await import('./utils/swal');
+    swalToast(message);
+}
 
 createInertiaApp({
     title: (title) => (title ? `${title} — ${appName}` : appName),
@@ -21,17 +26,13 @@ createInertiaApp({
             .use(plugin)
             .use(ZiggyVue);
 
-        // Show flash success via SweetAlert toast on every Inertia visit.
         const initialFlash = props.initialPage?.props?.flash?.success;
         if (initialFlash) {
-            queueMicrotask(() => swalToast(initialFlash));
+            queueMicrotask(() => flashSuccess(initialFlash));
         }
 
         router.on('success', (event) => {
-            const message = event.detail.page.props?.flash?.success;
-            if (message) {
-                swalToast(message);
-            }
+            flashSuccess(event.detail.page.props?.flash?.success);
         });
 
         return vueApp.mount(el);

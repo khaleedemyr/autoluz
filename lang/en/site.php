@@ -78,6 +78,7 @@ return [
     'video_title' => 'Video Stage',
     'video_from' => 'Exclusive content from',
     'video_open_youtube' => 'Open YouTube',
+    'video_play' => 'Play video',
     'video_empty' => 'No videos from this channel yet. Try refreshing the feed in admin or check',
     'footer_tagline' => 'A modern automotive editorial portal for car news, bikes, reviews, and driving tips.',
     'footer_categories' => 'Categories',

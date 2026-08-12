@@ -12,8 +12,9 @@
         <link rel="apple-touch-icon" href="/apple-touch-icon.png">
         <meta name="theme-color" content="#16181d">
 
-        <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=syne:500,600,700,800|manrope:400,500,600,700|newsreader:400,500,600,700&display=swap" rel="stylesheet" />
+        <link rel="preconnect" href="https://fonts.bunny.net" crossorigin>
+        <link rel="preconnect" href="https://i.ytimg.com" crossorigin>
+        <link href="https://fonts.bunny.net/css?family=syne:700|manrope:400,600,700|newsreader:400,600&display=swap" rel="stylesheet" />
 
         @routes
         @vite(['resources/js/app.js', "resources/js/Pages/{$page['component']}.vue"])
