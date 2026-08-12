@@ -143,19 +143,19 @@ Route::middleware('auth')->group(function () {
         ->name('community.follow');
 
     Route::post('/komunitas', [CommunityController::class, 'store'])
-        ->middleware('throttle:10,1')
+        ->middleware('throttle:community-post')
         ->name('community.store');
     Route::get('/komunitas/cari-artikel', [CommunityController::class, 'searchArticles'])
-        ->middleware('throttle:60,1')
+        ->middleware('throttle:community-search')
         ->name('community.search-articles');
     Route::get('/komunitas/cari-event', [CommunityController::class, 'searchEvents'])
-        ->middleware('throttle:60,1')
+        ->middleware('throttle:community-search')
         ->name('community.search-events');
     Route::get('/komunitas/cari-kendaraan', [CommunityController::class, 'searchVehicles'])
-        ->middleware('throttle:60,1')
+        ->middleware('throttle:community-search')
         ->name('community.search-vehicles');
     Route::post('/komunitas/p/{post}/balas', [CommunityController::class, 'reply'])
-        ->middleware('throttle:10,1')
+        ->middleware('throttle:community-post')
         ->name('community.reply');
     Route::post('/komunitas/p/{post}/like', [CommunityController::class, 'like'])
         ->middleware('throttle:60,1')
