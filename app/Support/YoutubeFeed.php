@@ -50,6 +50,7 @@ class YoutubeFeed
         // Drop legacy cache key from the RSS-only importer.
         Cache::forget('autoluz.youtube.feed.v1');
         Cache::forget('autoluz.home.page.v2');
+        Cache::forget('autoluz.home.page.v3');
     }
 
     public static function refresh(): array
