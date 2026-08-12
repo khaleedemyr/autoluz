@@ -1,0 +1,25 @@
+<?php
+
+return [
+    'all' => 'Semua',
+    'mobil' => 'Mobil',
+    'motor' => 'Motor',
+    'reviews' => 'Reviews',
+    'galeri-foto' => 'Galeri Foto',
+    'hot-news' => 'Hot News',
+    'mobil-baru' => 'Mobil Baru',
+    'tips' => 'Tips',
+    'galeri-foto-motor' => 'Galeri Foto',
+    'hot-news-motor' => 'Hot News',
+    'motor-baru' => 'Motor Baru',
+    'tips-motor' => 'Tips',
+    'life' => 'Life',
+    'car-news' => 'Car News',
+    'auto-shows' => 'Auto Shows',
+    'classic-cars' => 'Classic Cars',
+    'first-drive' => 'First Drive',
+    'future-cars' => 'Future Cars',
+    'motorsports' => 'Motorsports',
+    'technology' => 'Technology',
+    'blog' => 'Blog',
+];

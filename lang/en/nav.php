@@ -1,0 +1,25 @@
+<?php
+
+return [
+    'all' => 'All',
+    'mobil' => 'Cars',
+    'motor' => 'Motorcycles',
+    'reviews' => 'Reviews',
+    'galeri-foto' => 'Photo Gallery',
+    'hot-news' => 'Hot News',
+    'mobil-baru' => 'New Cars',
+    'tips' => 'Tips',
+    'galeri-foto-motor' => 'Photo Gallery',
+    'hot-news-motor' => 'Hot News',
+    'motor-baru' => 'New Bikes',
+    'tips-motor' => 'Tips',
+    'life' => 'Life',
+    'car-news' => 'Car News',
+    'auto-shows' => 'Auto Shows',
+    'classic-cars' => 'Classic Cars',
+    'first-drive' => 'First Drive',
+    'future-cars' => 'Future Cars',
+    'motorsports' => 'Motorsports',
+    'technology' => 'Technology',
+    'blog' => 'Blog',
+];

@@ -1,0 +1,195 @@
+@import url('https://fonts.bunny.net/css?family=syne:500,600,700,800|manrope:400,500,600,700|newsreader:400,500,600,700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    --brand-red: #ff1e2d;
+    --brand-red-dark: #d40f1c;
+    --charcoal: #0a0b0d;
+    --charcoal-soft: #14161a;
+    --steel: #22262e;
+    --mist: #eef0f3;
+    --ink: #0c0d10;
+    --muted: #6a7280;
+    --paper: #f7f8fa;
+    --line: rgba(10, 11, 13, 0.08);
+    --glow: rgba(255, 30, 45, 0.35);
+}
+
+@layer base {
+    html {
+        scroll-behavior: smooth;
+        overflow-x: hidden;
+    }
+
+    body {
+        @apply bg-[var(--paper)] text-[var(--ink)] antialiased;
+        font-family: 'Manrope', system-ui, sans-serif;
+        overflow-x: hidden;
+        background-image:
+            radial-gradient(ellipse 80% 50% at 100% -10%, rgba(255, 30, 45, 0.06), transparent 55%),
+            radial-gradient(ellipse 60% 40% at 0% 20%, rgba(10, 11, 13, 0.04), transparent 50%);
+        background-attachment: fixed;
+    }
+
+    ::selection {
+        background: color-mix(in srgb, var(--brand-red) 28%, white);
+        color: #111;
+    }
+}
+
+@layer components {
+    .font-display {
+        font-family: 'Syne', 'Manrope', sans-serif;
+        letter-spacing: -0.03em;
+        font-weight: 700;
+    }
+
+    .font-editorial {
+        font-family: 'Newsreader', Georgia, serif;
+    }
+
+    .font-oswald {
+        font-family: 'Manrope', system-ui, sans-serif;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+    }
+
+    .container-editorial {
+        @apply mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8;
+    }
+
+    .section-label {
+        @apply inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--brand-red)];
+    }
+
+    .section-label::before {
+        content: '';
+        @apply inline-block h-1.5 w-1.5 rounded-full bg-[var(--brand-red)];
+        box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand-red) 18%, transparent);
+    }
+
+    .surface-glass {
+        background: rgba(255, 255, 255, 0.72);
+        backdrop-filter: blur(16px) saturate(1.2);
+        -webkit-backdrop-filter: blur(16px) saturate(1.2);
+    }
+
+    .surface-dark {
+        background:
+            radial-gradient(ellipse 70% 80% at 15% 0%, rgba(255, 30, 45, 0.18), transparent 50%),
+            linear-gradient(180deg, #101218 0%, #0a0b0d 100%);
+    }
+
+    .media-frame {
+        @apply relative overflow-hidden;
+        border-radius: 1.25rem;
+    }
+
+    .media-frame img,
+    .media-frame iframe {
+        @apply transition duration-700;
+        transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .group:hover .media-frame img {
+        transform: scale(1.06);
+    }
+
+    .prose-article {
+        @apply font-editorial text-[1.125rem] leading-[1.8] text-neutral-800;
+    }
+
+    .prose-article p {
+        @apply mb-5;
+    }
+
+    .prose-article img {
+        @apply my-8 w-full;
+        border-radius: 1rem;
+    }
+
+    .prose-article h2,
+    .prose-article h3 {
+        @apply font-display mb-3 mt-10 text-2xl text-charcoal;
+        letter-spacing: -0.02em;
+    }
+
+    .rich-editor-content {
+        @apply text-[0.98rem] leading-7 text-neutral-800;
+    }
+
+    .rich-editor-content p {
+        @apply mb-3;
+    }
+
+    .rich-editor-content h2 {
+        @apply mb-2 mt-4 text-xl font-semibold;
+    }
+
+    .rich-editor-content h3 {
+        @apply mb-2 mt-3 text-lg font-semibold;
+    }
+
+    .rich-editor-content ul {
+        @apply mb-3 list-disc pl-5;
+    }
+
+    .rich-editor-content ol {
+        @apply mb-3 list-decimal pl-5;
+    }
+
+    .rich-editor-content blockquote {
+        @apply mb-3 border-l-4 border-brand/40 pl-3 italic text-neutral-600;
+    }
+
+    .rich-editor-content a {
+        @apply text-brand underline;
+    }
+
+    .rich-editor-content img {
+        @apply my-3 max-h-[28rem] rounded-xl;
+    }
+
+    .rich-editor-content p.is-editor-empty:first-child::before {
+        content: attr(data-placeholder);
+        float: left;
+        height: 0;
+        pointer-events: none;
+        @apply text-neutral-400;
+    }
+
+    .ticker-mask {
+        mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+    }
+
+    .ticker-track {
+        animation: ticker-scroll 48s linear infinite;
+    }
+
+    .ticker-track:hover {
+        animation-play-state: paused;
+    }
+
+    .reveal-up {
+        animation: reveal-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+}
+
+@keyframes ticker-scroll {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+}
+
+@keyframes reveal-up {
+    from {
+        opacity: 0;
+        transform: translateY(14px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
