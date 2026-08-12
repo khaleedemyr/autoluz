@@ -145,6 +145,12 @@ Route::middleware('auth')->group(function () {
     Route::post('/komunitas', [CommunityController::class, 'store'])
         ->middleware('throttle:10,1')
         ->name('community.store');
+    Route::get('/komunitas/cari-artikel', [CommunityController::class, 'searchArticles'])
+        ->middleware('throttle:60,1')
+        ->name('community.search-articles');
+    Route::get('/komunitas/cari-event', [CommunityController::class, 'searchEvents'])
+        ->middleware('throttle:60,1')
+        ->name('community.search-events');
     Route::post('/komunitas/p/{post}/balas', [CommunityController::class, 'reply'])
         ->middleware('throttle:10,1')
         ->name('community.reply');

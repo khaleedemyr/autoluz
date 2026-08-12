@@ -13,6 +13,8 @@ class CommunityPost extends Model
         'user_id',
         'parent_id',
         'group_id',
+        'article_id',
+        'event_id',
         'body',
         'image_path',
         'likes_count',
@@ -37,6 +39,16 @@ class CommunityPost extends Model
     public function group(): BelongsTo
     {
         return $this->belongsTo(CommunityGroup::class, 'group_id');
+    }
+
+    public function article(): BelongsTo
+    {
+        return $this->belongsTo(Article::class);
+    }
+
+    public function event(): BelongsTo
+    {
+        return $this->belongsTo(Event::class);
     }
 
     public function parent(): BelongsTo
@@ -100,7 +112,7 @@ class CommunityPost extends Model
 
     public function toCardArray(?int $viewerId = null, int $depth = 0): array
     {
-        $this->loadMissing(['user', 'parent.user', 'group']);
+        $this->loadMissing(['user', 'parent.user', 'group', 'article', 'event']);
 
         $rootId = $this->parent_id ? $this->rootId() : $this->id;
 
@@ -110,6 +122,31 @@ class CommunityPost extends Model
                 ->map(fn (self $reply) => $reply->toCardArray($viewerId, $depth + 1))
                 ->values()
                 ->all();
+        }
+
+        $article = null;
+        if ($this->article && ($this->article->status ?? null) === 'published') {
+            $article = [
+                'id' => $this->article->id,
+                'title' => $this->article->title,
+                'slug' => $this->article->slug,
+                'excerpt' => $this->article->excerpt,
+                'featured_image_url' => $this->article->toCardArray()['featured_image_url'] ?? null,
+                'url' => route('articles.show', $this->article->slug),
+            ];
+        }
+
+        $event = null;
+        if ($this->event && ($this->event->status ?? null) === 'published') {
+            $event = [
+                'id' => $this->event->id,
+                'title' => $this->event->title,
+                'slug' => $this->event->slug,
+                'excerpt' => $this->event->excerpt,
+                'cover_image_url' => $this->event->toCardArray()['cover_image_url'] ?? null,
+                'starts_at_label' => optional($this->event->starts_at)?->translatedFormat('d M Y'),
+                'url' => route('events.show', $this->event->slug),
+            ];
         }
 
         return [
@@ -135,6 +172,8 @@ class CommunityPost extends Model
                 'slug' => $this->group->slug,
                 'url' => route('community.groups.show', $this->group->slug),
             ] : null,
+            'article' => $article,
+            'event' => $event,
             'parent_id' => $this->parent_id,
             'parent_user' => $this->parent?->user
                 ? $this->parent->user->toPublicArray()

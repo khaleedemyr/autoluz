@@ -61,6 +61,7 @@ onMounted(() => {
                     :action="route('community.reply', post.id)"
                     :placeholder="t('community_reply_ph')"
                     :submit-label="t('community_reply')"
+                    :allow-tagging="false"
                 />
             </div>
 

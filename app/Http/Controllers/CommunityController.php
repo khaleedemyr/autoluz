@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Article;
 use App\Models\CommunityGroup;
 use App\Models\CommunityLike;
 use App\Models\CommunityPost;
+use App\Models\Event;
 use App\Models\User;
 use App\Support\CommunityNotifier;
 use Illuminate\Http\JsonResponse;
@@ -26,7 +28,7 @@ class CommunityController extends Controller
             ->visible()
             ->roots()
             ->whereNull('group_id')
-            ->with(['user'])
+            ->with(['user', 'article', 'event'])
             ->when(
                 $viewerId,
                 fn ($q) => $q->with(['likes' => fn ($q) => $q->where('user_id', $viewerId)]),
@@ -75,13 +77,19 @@ class CommunityController extends Controller
 
         $post->load([
             'user',
+            'article',
+            'event',
             'replies' => fn ($q) => $q->visible()->with([
                 'user',
                 'parent.user',
+                'article',
+                'event',
                 'replies' => fn ($q) => $q->visible()->with([
                     'user',
                     'parent.user',
-                    'replies' => fn ($q) => $q->visible()->with(['user', 'parent.user']),
+                    'article',
+                    'event',
+                    'replies' => fn ($q) => $q->visible()->with(['user', 'parent.user', 'article', 'event']),
                 ]),
             ])->oldest(),
         ]);
@@ -116,7 +124,7 @@ class CommunityController extends Controller
             ->visible()
             ->roots()
             ->where('user_id', $user->id)
-            ->with(['user'])
+            ->with(['user', 'article', 'event'])
             ->when(
                 $viewerId,
                 fn ($q) => $q->with(['likes' => fn ($q) => $q->where('user_id', $viewerId)]),
@@ -157,6 +165,8 @@ class CommunityController extends Controller
             'body' => ['required', 'string', 'max:500'],
             'image' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:5120'],
             'group_id' => ['nullable', 'integer', 'exists:community_groups,id'],
+            'article_id' => ['nullable', 'integer', 'exists:articles,id'],
+            'event_id' => ['nullable', 'integer', 'exists:events,id'],
         ]);
 
         $user = $request->user();
@@ -167,15 +177,27 @@ class CommunityController extends Controller
             abort_unless($group->isMember($user), 403, 'Gabung grup dulu untuk posting.');
         }
 
+        $articleId = null;
+        if (! empty($data['article_id'])) {
+            $articleId = Article::query()->published()->whereKey($data['article_id'])->value('id');
+        }
+
+        $eventId = null;
+        if (! empty($data['event_id'])) {
+            $eventId = Event::query()->published()->whereKey($data['event_id'])->value('id');
+        }
+
         $imagePath = null;
         if ($request->hasFile('image')) {
             $imagePath = $request->file('image')->store('community/posts', 'public');
         }
 
-        $post = DB::transaction(function () use ($user, $data, $imagePath, $group) {
+        $post = DB::transaction(function () use ($user, $data, $imagePath, $group, $articleId, $eventId) {
             $post = CommunityPost::create([
                 'user_id' => $user->id,
                 'group_id' => $group?->id,
+                'article_id' => $articleId,
+                'event_id' => $eventId,
                 'body' => trim($data['body']),
                 'image_path' => $imagePath,
             ]);
@@ -198,6 +220,59 @@ class CommunityController extends Controller
         return redirect()
             ->route('community.show', $post->id)
             ->with('success', __('Post berhasil dipublikasikan.'));
+    }
+
+    public function searchArticles(Request $request): JsonResponse
+    {
+        $q = trim((string) $request->query('q', ''));
+
+        $articles = Article::query()
+            ->published()
+            ->when($q !== '', fn ($query) => $query->search($q))
+            ->orderByDesc('published_at')
+            ->limit(8)
+            ->get()
+            ->map(fn (Article $article) => [
+                'id' => $article->id,
+                'title' => $article->title,
+                'excerpt' => $article->excerpt,
+                'featured_image_url' => $article->toCardArray()['featured_image_url'] ?? null,
+                'url' => route('articles.show', $article->slug),
+            ])
+            ->values();
+
+        return response()->json(['data' => $articles]);
+    }
+
+    public function searchEvents(Request $request): JsonResponse
+    {
+        $q = trim((string) $request->query('q', ''));
+
+        $events = Event::query()
+            ->published()
+            ->when($q !== '', function ($query) use ($q) {
+                $like = '%'.str_replace(['%', '_'], ['\\%', '\\_'], $q).'%';
+                $query->where(function ($inner) use ($like) {
+                    $inner->where('title', 'like', $like)
+                        ->orWhere('location', 'like', $like)
+                        ->orWhere('city', 'like', $like)
+                        ->orWhere('venue', 'like', $like);
+                });
+            })
+            ->orderByDesc('starts_at')
+            ->limit(8)
+            ->get()
+            ->map(fn (Event $event) => [
+                'id' => $event->id,
+                'title' => $event->title,
+                'excerpt' => $event->excerpt,
+                'cover_image_url' => $event->toCardArray()['cover_image_url'] ?? null,
+                'starts_at_label' => optional($event->starts_at)?->translatedFormat('d M Y'),
+                'url' => route('events.show', $event->slug),
+            ])
+            ->values();
+
+        return response()->json(['data' => $events]);
     }
 
     public function reply(Request $request, CommunityPost $post): RedirectResponse

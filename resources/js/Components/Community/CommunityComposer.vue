@@ -1,6 +1,7 @@
 <script setup>
-import { computed, nextTick, ref } from 'vue';
+import { computed, nextTick, onUnmounted, ref, watch } from 'vue';
 import { useForm, usePage } from '@inertiajs/vue3';
+import axios from 'axios';
 import CommunityEmojiPicker from '@/Components/Community/CommunityEmojiPicker.vue';
 import { applyEmoticons } from '@/utils/communityEmoji';
 import { swalToast, swalWarning } from '@/utils/swal';
@@ -13,6 +14,7 @@ const props = defineProps({
     replyToName: { type: String, default: '' },
     autofocus: { type: Boolean, default: false },
     groupId: { type: [Number, String], default: null },
+    allowTagging: { type: Boolean, default: true },
 });
 
 const emit = defineEmits(['success', 'cancel']);
@@ -24,10 +26,22 @@ const preview = ref(null);
 const fileInput = ref(null);
 const textarea = ref(null);
 
+const tagPanel = ref(null); // 'article' | 'event' | null
+const tagQuery = ref('');
+const tagResults = ref([]);
+const tagLoading = ref(false);
+const selectedArticle = ref(null);
+const selectedEvent = ref(null);
+let tagDebounce = null;
+
+const canTag = computed(() => props.allowTagging && !props.replyToName);
+
 const form = useForm({
     body: '',
     image: null,
     group_id: props.groupId,
+    article_id: null,
+    event_id: null,
 });
 
 const resolvedPlaceholder = computed(() => {
@@ -60,6 +74,72 @@ function clearImage() {
         fileInput.value.value = '';
     }
 }
+
+function openTagPanel(type) {
+    tagPanel.value = tagPanel.value === type ? null : type;
+    tagQuery.value = '';
+    tagResults.value = [];
+    if (tagPanel.value) {
+        nextTick(() => searchTags());
+    }
+}
+
+function closeTagPanel() {
+    tagPanel.value = null;
+    tagQuery.value = '';
+    tagResults.value = [];
+}
+
+async function searchTags() {
+    if (!tagPanel.value) return;
+    tagLoading.value = true;
+    try {
+        const routeName =
+            tagPanel.value === 'article' ? 'community.search-articles' : 'community.search-events';
+        const { data } = await axios.get(route(routeName), {
+            params: { q: tagQuery.value },
+        });
+        tagResults.value = data?.data || [];
+    } catch {
+        tagResults.value = [];
+    } finally {
+        tagLoading.value = false;
+    }
+}
+
+function onTagQueryInput() {
+    clearTimeout(tagDebounce);
+    tagDebounce = setTimeout(searchTags, 280);
+}
+
+function pickArticle(item) {
+    selectedArticle.value = item;
+    form.article_id = item.id;
+    closeTagPanel();
+}
+
+function pickEvent(item) {
+    selectedEvent.value = item;
+    form.event_id = item.id;
+    closeTagPanel();
+}
+
+function clearArticle() {
+    selectedArticle.value = null;
+    form.article_id = null;
+}
+
+function clearEvent() {
+    selectedEvent.value = null;
+    form.event_id = null;
+}
+
+watch(
+    () => props.groupId,
+    (id) => {
+        form.group_id = id;
+    },
+);
 
 async function goLogin() {
     await swalWarning(t('community_login_gate'), {
@@ -104,13 +184,21 @@ function submit() {
         forceFormData: true,
         preserveScroll: true,
         onSuccess: () => {
-            form.reset('body', 'image');
+            form.reset('body', 'image', 'article_id', 'event_id');
             form.group_id = props.groupId;
             clearImage();
+            clearArticle();
+            clearEvent();
+            closeTagPanel();
             emit('success');
         },
         onError: () => {
-            const msg = form.errors.body || form.errors.image || t('community_post_failed');
+            const msg =
+                form.errors.body ||
+                form.errors.image ||
+                form.errors.article_id ||
+                form.errors.event_id ||
+                t('community_post_failed');
             swalToast(msg, { icon: 'error' });
         },
     });
@@ -119,6 +207,8 @@ function submit() {
 if (props.autofocus) {
     nextTick(() => textarea.value?.focus());
 }
+
+onUnmounted(() => clearTimeout(tagDebounce));
 </script>
 
 <template>
@@ -185,8 +275,113 @@ if (props.autofocus) {
                 </div>
                 <p v-if="form.errors.image" class="mt-1 text-xs text-red-600">{{ form.errors.image }}</p>
 
+                <div v-if="canTag && (selectedArticle || selectedEvent)" class="mt-3 space-y-2">
+                    <div
+                        v-if="selectedArticle"
+                        class="flex items-center gap-3 rounded-2xl border border-[var(--line)] bg-white/80 p-2.5"
+                    >
+                        <img
+                            v-if="selectedArticle.featured_image_url"
+                            :src="selectedArticle.featured_image_url"
+                            alt=""
+                            class="h-12 w-12 shrink-0 rounded-xl object-cover"
+                        />
+                        <div class="min-w-0 flex-1">
+                            <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-brand">
+                                {{ t('community_tagged_article') }}
+                            </p>
+                            <p class="truncate text-sm font-medium text-charcoal">{{ selectedArticle.title }}</p>
+                        </div>
+                        <button
+                            type="button"
+                            class="shrink-0 text-[10px] font-semibold uppercase tracking-[0.12em] text-charcoal/45 hover:text-red-600"
+                            @click="clearArticle"
+                        >
+                            {{ t('community_tag_clear') }}
+                        </button>
+                    </div>
+                    <div
+                        v-if="selectedEvent"
+                        class="flex items-center gap-3 rounded-2xl border border-[var(--line)] bg-white/80 p-2.5"
+                    >
+                        <img
+                            v-if="selectedEvent.cover_image_url"
+                            :src="selectedEvent.cover_image_url"
+                            alt=""
+                            class="h-12 w-12 shrink-0 rounded-xl object-cover"
+                        />
+                        <div class="min-w-0 flex-1">
+                            <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-brand">
+                                {{ t('community_tagged_event') }}
+                            </p>
+                            <p class="truncate text-sm font-medium text-charcoal">{{ selectedEvent.title }}</p>
+                            <p v-if="selectedEvent.starts_at_label" class="text-xs text-charcoal/45">
+                                {{ selectedEvent.starts_at_label }}
+                            </p>
+                        </div>
+                        <button
+                            type="button"
+                            class="shrink-0 text-[10px] font-semibold uppercase tracking-[0.12em] text-charcoal/45 hover:text-red-600"
+                            @click="clearEvent"
+                        >
+                            {{ t('community_tag_clear') }}
+                        </button>
+                    </div>
+                </div>
+
+                <div
+                    v-if="canTag && tagPanel"
+                    class="mt-3 overflow-hidden rounded-2xl border border-[var(--line)] bg-white"
+                >
+                    <div class="border-b border-[var(--line)] px-3 py-2">
+                        <input
+                            v-model="tagQuery"
+                            type="search"
+                            :placeholder="
+                                tagPanel === 'article'
+                                    ? t('community_tag_search_article')
+                                    : t('community_tag_search_event')
+                            "
+                            class="w-full border-0 bg-transparent px-1 py-1.5 text-sm text-charcoal placeholder:text-charcoal/35 focus:ring-0"
+                            @input="onTagQueryInput"
+                        />
+                    </div>
+                    <div class="max-h-56 overflow-y-auto">
+                        <p v-if="tagLoading" class="px-4 py-3 text-xs text-charcoal/45">…</p>
+                        <p
+                            v-else-if="!tagResults.length"
+                            class="px-4 py-3 text-xs text-charcoal/45"
+                        >
+                            {{ t('community_tag_empty') }}
+                        </p>
+                        <button
+                            v-for="item in tagResults"
+                            :key="`${tagPanel}-${item.id}`"
+                            type="button"
+                            class="flex w-full items-center gap-3 px-3 py-2.5 text-left transition hover:bg-mist/60"
+                            @click="tagPanel === 'article' ? pickArticle(item) : pickEvent(item)"
+                        >
+                            <img
+                                v-if="item.featured_image_url || item.cover_image_url"
+                                :src="item.featured_image_url || item.cover_image_url"
+                                alt=""
+                                class="h-10 w-10 shrink-0 rounded-lg object-cover"
+                            />
+                            <div class="min-w-0 flex-1">
+                                <p class="truncate text-sm font-medium text-charcoal">{{ item.title }}</p>
+                                <p
+                                    v-if="item.starts_at_label || item.excerpt"
+                                    class="truncate text-xs text-charcoal/45"
+                                >
+                                    {{ item.starts_at_label || item.excerpt }}
+                                </p>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
                 <div class="mt-3 flex flex-wrap items-center justify-between gap-3">
-                    <div class="flex items-center gap-3">
+                    <div class="flex flex-wrap items-center gap-3">
                         <CommunityEmojiPicker @pick="insertEmoji" />
 
                         <label class="inline-flex cursor-pointer items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-charcoal/55 transition hover:text-brand">
@@ -202,6 +397,31 @@ if (props.autofocus) {
                             </svg>
                             {{ t('community_add_photo') }}
                         </label>
+
+                        <template v-if="canTag">
+                            <button
+                                type="button"
+                                class="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] transition"
+                                :class="tagPanel === 'article' || selectedArticle ? 'text-brand' : 'text-charcoal/55 hover:text-brand'"
+                                @click="openTagPanel('article')"
+                            >
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                                </svg>
+                                {{ t('community_tag_article') }}
+                            </button>
+                            <button
+                                type="button"
+                                class="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] transition"
+                                :class="tagPanel === 'event' || selectedEvent ? 'text-brand' : 'text-charcoal/55 hover:text-brand'"
+                                @click="openTagPanel('event')"
+                            >
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                {{ t('community_tag_event') }}
+                            </button>
+                        </template>
                     </div>
 
                     <button

@@ -117,6 +117,50 @@ function onChildReplied() {
                     {{ post.body }}
                 </div>
 
+                <div v-if="post.article || post.event" class="mt-3 space-y-2">
+                    <a
+                        v-if="post.article"
+                        :href="post.article.url"
+                        class="flex items-center gap-3 rounded-2xl border border-[var(--line)] bg-white/70 p-2.5 transition hover:border-brand/40 hover:bg-white"
+                    >
+                        <img
+                            v-if="post.article.featured_image_url"
+                            :src="post.article.featured_image_url"
+                            alt=""
+                            class="h-14 w-14 shrink-0 rounded-xl object-cover"
+                            loading="lazy"
+                        />
+                        <div class="min-w-0 flex-1">
+                            <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-brand">
+                                {{ t('community_tagged_article') }}
+                            </p>
+                            <p class="line-clamp-2 text-sm font-medium text-charcoal">{{ post.article.title }}</p>
+                        </div>
+                    </a>
+                    <a
+                        v-if="post.event"
+                        :href="post.event.url"
+                        class="flex items-center gap-3 rounded-2xl border border-[var(--line)] bg-white/70 p-2.5 transition hover:border-brand/40 hover:bg-white"
+                    >
+                        <img
+                            v-if="post.event.cover_image_url"
+                            :src="post.event.cover_image_url"
+                            alt=""
+                            class="h-14 w-14 shrink-0 rounded-xl object-cover"
+                            loading="lazy"
+                        />
+                        <div class="min-w-0 flex-1">
+                            <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-brand">
+                                {{ t('community_tagged_event') }}
+                            </p>
+                            <p class="line-clamp-2 text-sm font-medium text-charcoal">{{ post.event.title }}</p>
+                            <p v-if="post.event.starts_at_label" class="mt-0.5 text-xs text-charcoal/45">
+                                {{ post.event.starts_at_label }}
+                            </p>
+                        </div>
+                    </a>
+                </div>
+
                 <Link
                     v-if="post.image_url"
                     :href="post.url"
@@ -157,6 +201,7 @@ function onChildReplied() {
                         :placeholder="t('community_reply_ph')"
                         :submit-label="t('community_reply')"
                         :reply-to-name="post.user?.username ? `@${post.user.username}` : (post.user?.name || '')"
+                        :allow-tagging="false"
                         autofocus
                         @success="emit('replied')"
                         @cancel="emit('cancel-reply')"
