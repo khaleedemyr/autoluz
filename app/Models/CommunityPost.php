@@ -15,6 +15,7 @@ class CommunityPost extends Model
         'group_id',
         'article_id',
         'event_id',
+        'vehicle_id',
         'body',
         'image_path',
         'likes_count',
@@ -49,6 +50,11 @@ class CommunityPost extends Model
     public function event(): BelongsTo
     {
         return $this->belongsTo(Event::class);
+    }
+
+    public function vehicle(): BelongsTo
+    {
+        return $this->belongsTo(Vehicle::class);
     }
 
     public function parent(): BelongsTo
@@ -112,7 +118,7 @@ class CommunityPost extends Model
 
     public function toCardArray(?int $viewerId = null, int $depth = 0): array
     {
-        $this->loadMissing(['user', 'parent.user', 'group', 'article', 'event']);
+        $this->loadMissing(['user', 'parent.user', 'group', 'article', 'event', 'vehicle.brand']);
 
         $rootId = $this->parent_id ? $this->rootId() : $this->id;
 
@@ -149,6 +155,20 @@ class CommunityPost extends Model
             ];
         }
 
+        $vehicle = null;
+        if ($this->vehicle && ($this->vehicle->status ?? null) === 'published') {
+            $card = $this->vehicle->toCardArray();
+            $vehicle = [
+                'id' => $this->vehicle->id,
+                'name' => $this->vehicle->name,
+                'slug' => $this->vehicle->slug,
+                'cover_image_url' => $card['cover_image_url'] ?? null,
+                'price_label' => $card['price_label'] ?? null,
+                'brand_name' => $card['brand']['name'] ?? null,
+                'url' => $card['url'] ?? null,
+            ];
+        }
+
         return [
             'id' => $this->id,
             'body' => $this->body,
@@ -174,6 +194,7 @@ class CommunityPost extends Model
             ] : null,
             'article' => $article,
             'event' => $event,
+            'vehicle' => $vehicle,
             'parent_id' => $this->parent_id,
             'parent_user' => $this->parent?->user
                 ? $this->parent->user->toPublicArray()

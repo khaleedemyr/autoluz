@@ -8,6 +8,7 @@ use App\Models\CommunityLike;
 use App\Models\CommunityPost;
 use App\Models\Event;
 use App\Models\User;
+use App\Models\Vehicle;
 use App\Support\CommunityNotifier;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -28,7 +29,7 @@ class CommunityController extends Controller
             ->visible()
             ->roots()
             ->whereNull('group_id')
-            ->with(['user', 'article', 'event'])
+            ->with(['user', 'article', 'event', 'vehicle.brand'])
             ->when(
                 $viewerId,
                 fn ($q) => $q->with(['likes' => fn ($q) => $q->where('user_id', $viewerId)]),
@@ -79,17 +80,20 @@ class CommunityController extends Controller
             'user',
             'article',
             'event',
+            'vehicle.brand',
             'replies' => fn ($q) => $q->visible()->with([
                 'user',
                 'parent.user',
                 'article',
                 'event',
+                'vehicle.brand',
                 'replies' => fn ($q) => $q->visible()->with([
                     'user',
                     'parent.user',
                     'article',
                     'event',
-                    'replies' => fn ($q) => $q->visible()->with(['user', 'parent.user', 'article', 'event']),
+                    'vehicle.brand',
+                    'replies' => fn ($q) => $q->visible()->with(['user', 'parent.user', 'article', 'event', 'vehicle.brand']),
                 ]),
             ])->oldest(),
         ]);
@@ -124,7 +128,7 @@ class CommunityController extends Controller
             ->visible()
             ->roots()
             ->where('user_id', $user->id)
-            ->with(['user', 'article', 'event'])
+            ->with(['user', 'article', 'event', 'vehicle.brand'])
             ->when(
                 $viewerId,
                 fn ($q) => $q->with(['likes' => fn ($q) => $q->where('user_id', $viewerId)]),
@@ -167,6 +171,7 @@ class CommunityController extends Controller
             'group_id' => ['nullable', 'integer', 'exists:community_groups,id'],
             'article_id' => ['nullable', 'integer', 'exists:articles,id'],
             'event_id' => ['nullable', 'integer', 'exists:events,id'],
+            'vehicle_id' => ['nullable', 'integer', 'exists:vehicles,id'],
         ]);
 
         $user = $request->user();
@@ -177,27 +182,20 @@ class CommunityController extends Controller
             abort_unless($group->isMember($user), 403, 'Gabung grup dulu untuk posting.');
         }
 
-        $articleId = null;
-        if (! empty($data['article_id'])) {
-            $articleId = Article::query()->published()->whereKey($data['article_id'])->value('id');
-        }
-
-        $eventId = null;
-        if (! empty($data['event_id'])) {
-            $eventId = Event::query()->published()->whereKey($data['event_id'])->value('id');
-        }
+        $tags = $this->resolvePublishedTags($data);
 
         $imagePath = null;
         if ($request->hasFile('image')) {
             $imagePath = $request->file('image')->store('community/posts', 'public');
         }
 
-        $post = DB::transaction(function () use ($user, $data, $imagePath, $group, $articleId, $eventId) {
+        $post = DB::transaction(function () use ($user, $data, $imagePath, $group, $tags) {
             $post = CommunityPost::create([
                 'user_id' => $user->id,
                 'group_id' => $group?->id,
-                'article_id' => $articleId,
-                'event_id' => $eventId,
+                'article_id' => $tags['article_id'],
+                'event_id' => $tags['event_id'],
+                'vehicle_id' => $tags['vehicle_id'],
                 'body' => trim($data['body']),
                 'image_path' => $imagePath,
             ]);
@@ -275,6 +273,43 @@ class CommunityController extends Controller
         return response()->json(['data' => $events]);
     }
 
+    public function searchVehicles(Request $request): JsonResponse
+    {
+        $q = trim((string) $request->query('q', ''));
+
+        $vehicles = Vehicle::query()
+            ->published()
+            ->with('brand')
+            ->when($q !== '', function ($query) use ($q) {
+                $like = '%'.str_replace(['%', '_'], ['\\%', '\\_'], $q).'%';
+                $query->where(function ($inner) use ($like) {
+                    $inner->where('name', 'like', $like)
+                        ->orWhere('body_type', 'like', $like)
+                        ->orWhereHas('brand', fn ($brand) => $brand->where('name', 'like', $like));
+                });
+            })
+            ->orderByDesc('published_at')
+            ->limit(8)
+            ->get()
+            ->map(function (Vehicle $vehicle) {
+                $card = $vehicle->toCardArray();
+
+                return [
+                    'id' => $vehicle->id,
+                    'title' => $vehicle->name,
+                    'name' => $vehicle->name,
+                    'excerpt' => trim(($card['brand']['name'] ?? '').' '.($vehicle->model_year ? (string) $vehicle->model_year : '')),
+                    'cover_image_url' => $card['cover_image_url'] ?? null,
+                    'price_label' => $card['price_label'] ?? null,
+                    'brand_name' => $card['brand']['name'] ?? null,
+                    'url' => $card['url'] ?? null,
+                ];
+            })
+            ->values();
+
+        return response()->json(['data' => $vehicles]);
+    }
+
     public function reply(Request $request, CommunityPost $post): RedirectResponse
     {
         abort_if($post->is_hidden, 404);
@@ -286,7 +321,12 @@ class CommunityController extends Controller
         $data = $request->validate([
             'body' => ['required', 'string', 'max:500'],
             'image' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:5120'],
+            'article_id' => ['nullable', 'integer', 'exists:articles,id'],
+            'event_id' => ['nullable', 'integer', 'exists:events,id'],
+            'vehicle_id' => ['nullable', 'integer', 'exists:vehicles,id'],
         ]);
+
+        $tags = $this->resolvePublishedTags($data);
 
         $imagePath = null;
         if ($request->hasFile('image')) {
@@ -295,11 +335,14 @@ class CommunityController extends Controller
 
         $reply = null;
 
-        DB::transaction(function () use ($request, $parent, $root, $data, $imagePath, &$reply) {
+        DB::transaction(function () use ($request, $parent, $root, $data, $imagePath, $tags, &$reply) {
             $reply = CommunityPost::create([
                 'user_id' => $request->user()->id,
                 'parent_id' => $parent->id,
                 'group_id' => $root->group_id,
+                'article_id' => $tags['article_id'],
+                'event_id' => $tags['event_id'],
+                'vehicle_id' => $tags['vehicle_id'],
                 'body' => trim($data['body']),
                 'image_path' => $imagePath,
             ]);
@@ -315,6 +358,34 @@ class CommunityController extends Controller
         return redirect()
             ->route('community.show', $root->id)
             ->with('success', __('Balasan terkirim.'));
+    }
+
+    /**
+     * @param  array{article_id?: mixed, event_id?: mixed, vehicle_id?: mixed}  $data
+     * @return array{article_id: int|null, event_id: int|null, vehicle_id: int|null}
+     */
+    private function resolvePublishedTags(array $data): array
+    {
+        $articleId = null;
+        if (! empty($data['article_id'])) {
+            $articleId = Article::query()->published()->whereKey($data['article_id'])->value('id');
+        }
+
+        $eventId = null;
+        if (! empty($data['event_id'])) {
+            $eventId = Event::query()->published()->whereKey($data['event_id'])->value('id');
+        }
+
+        $vehicleId = null;
+        if (! empty($data['vehicle_id'])) {
+            $vehicleId = Vehicle::query()->published()->whereKey($data['vehicle_id'])->value('id');
+        }
+
+        return [
+            'article_id' => $articleId,
+            'event_id' => $eventId,
+            'vehicle_id' => $vehicleId,
+        ];
     }
 
     public function like(Request $request, CommunityPost $post): RedirectResponse|JsonResponse

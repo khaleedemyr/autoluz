@@ -84,7 +84,7 @@ class CommunityGroupController extends Controller
             ->visible()
             ->roots()
             ->where('group_id', $group->id)
-            ->with(['user', 'group', 'article', 'event'])
+            ->with(['user', 'group', 'article', 'event', 'vehicle.brand'])
             ->when(
                 $viewerId,
                 fn ($q) => $q->with(['likes' => fn ($q) => $q->where('user_id', $viewerId)]),

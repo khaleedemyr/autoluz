@@ -26,15 +26,28 @@ const preview = ref(null);
 const fileInput = ref(null);
 const textarea = ref(null);
 
-const tagPanel = ref(null); // 'article' | 'event' | null
+const tagPanel = ref(null); // 'article' | 'event' | 'vehicle' | null
 const tagQuery = ref('');
 const tagResults = ref([]);
 const tagLoading = ref(false);
 const selectedArticle = ref(null);
 const selectedEvent = ref(null);
+const selectedVehicle = ref(null);
 let tagDebounce = null;
 
-const canTag = computed(() => props.allowTagging && !props.replyToName);
+const canTag = computed(() => props.allowTagging);
+
+const tagSearchRoute = {
+    article: 'community.search-articles',
+    event: 'community.search-events',
+    vehicle: 'community.search-vehicles',
+};
+
+const tagSearchPlaceholder = computed(() => {
+    if (tagPanel.value === 'article') return t('community_tag_search_article');
+    if (tagPanel.value === 'event') return t('community_tag_search_event');
+    return t('community_tag_search_vehicle');
+});
 
 const form = useForm({
     body: '',
@@ -42,6 +55,7 @@ const form = useForm({
     group_id: props.groupId,
     article_id: null,
     event_id: null,
+    vehicle_id: null,
 });
 
 const resolvedPlaceholder = computed(() => {
@@ -94,9 +108,7 @@ async function searchTags() {
     if (!tagPanel.value) return;
     tagLoading.value = true;
     try {
-        const routeName =
-            tagPanel.value === 'article' ? 'community.search-articles' : 'community.search-events';
-        const { data } = await axios.get(route(routeName), {
+        const { data } = await axios.get(route(tagSearchRoute[tagPanel.value]), {
             params: { q: tagQuery.value },
         });
         tagResults.value = data?.data || [];
@@ -112,15 +124,17 @@ function onTagQueryInput() {
     tagDebounce = setTimeout(searchTags, 280);
 }
 
-function pickArticle(item) {
-    selectedArticle.value = item;
-    form.article_id = item.id;
-    closeTagPanel();
-}
-
-function pickEvent(item) {
-    selectedEvent.value = item;
-    form.event_id = item.id;
+function pickTag(item) {
+    if (tagPanel.value === 'article') {
+        selectedArticle.value = item;
+        form.article_id = item.id;
+    } else if (tagPanel.value === 'event') {
+        selectedEvent.value = item;
+        form.event_id = item.id;
+    } else if (tagPanel.value === 'vehicle') {
+        selectedVehicle.value = item;
+        form.vehicle_id = item.id;
+    }
     closeTagPanel();
 }
 
@@ -132,6 +146,11 @@ function clearArticle() {
 function clearEvent() {
     selectedEvent.value = null;
     form.event_id = null;
+}
+
+function clearVehicle() {
+    selectedVehicle.value = null;
+    form.vehicle_id = null;
 }
 
 watch(
@@ -184,11 +203,12 @@ function submit() {
         forceFormData: true,
         preserveScroll: true,
         onSuccess: () => {
-            form.reset('body', 'image', 'article_id', 'event_id');
+            form.reset('body', 'image', 'article_id', 'event_id', 'vehicle_id');
             form.group_id = props.groupId;
             clearImage();
             clearArticle();
             clearEvent();
+            clearVehicle();
             closeTagPanel();
             emit('success');
         },
@@ -198,6 +218,7 @@ function submit() {
                 form.errors.image ||
                 form.errors.article_id ||
                 form.errors.event_id ||
+                form.errors.vehicle_id ||
                 t('community_post_failed');
             swalToast(msg, { icon: 'error' });
         },
@@ -275,7 +296,10 @@ onUnmounted(() => clearTimeout(tagDebounce));
                 </div>
                 <p v-if="form.errors.image" class="mt-1 text-xs text-red-600">{{ form.errors.image }}</p>
 
-                <div v-if="canTag && (selectedArticle || selectedEvent)" class="mt-3 space-y-2">
+                <div
+                    v-if="canTag && (selectedArticle || selectedEvent || selectedVehicle)"
+                    class="mt-3 space-y-2"
+                >
                     <div
                         v-if="selectedArticle"
                         class="flex items-center gap-3 rounded-2xl border border-[var(--line)] bg-white/80 p-2.5"
@@ -327,6 +351,42 @@ onUnmounted(() => clearTimeout(tagDebounce));
                             {{ t('community_tag_clear') }}
                         </button>
                     </div>
+                    <div
+                        v-if="selectedVehicle"
+                        class="flex items-center gap-3 rounded-2xl border border-[var(--line)] bg-white/80 p-2.5"
+                    >
+                        <img
+                            v-if="selectedVehicle.cover_image_url"
+                            :src="selectedVehicle.cover_image_url"
+                            alt=""
+                            class="h-12 w-12 shrink-0 rounded-xl object-cover"
+                        />
+                        <div class="min-w-0 flex-1">
+                            <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-brand">
+                                {{ t('community_tagged_vehicle') }}
+                            </p>
+                            <p class="truncate text-sm font-medium text-charcoal">
+                                {{ selectedVehicle.name || selectedVehicle.title }}
+                            </p>
+                            <p
+                                v-if="selectedVehicle.brand_name || selectedVehicle.price_label"
+                                class="truncate text-xs text-charcoal/45"
+                            >
+                                {{
+                                    [selectedVehicle.brand_name, selectedVehicle.price_label]
+                                        .filter(Boolean)
+                                        .join(' · ')
+                                }}
+                            </p>
+                        </div>
+                        <button
+                            type="button"
+                            class="shrink-0 text-[10px] font-semibold uppercase tracking-[0.12em] text-charcoal/45 hover:text-red-600"
+                            @click="clearVehicle"
+                        >
+                            {{ t('community_tag_clear') }}
+                        </button>
+                    </div>
                 </div>
 
                 <div
@@ -337,11 +397,7 @@ onUnmounted(() => clearTimeout(tagDebounce));
                         <input
                             v-model="tagQuery"
                             type="search"
-                            :placeholder="
-                                tagPanel === 'article'
-                                    ? t('community_tag_search_article')
-                                    : t('community_tag_search_event')
-                            "
+                            :placeholder="tagSearchPlaceholder"
                             class="w-full border-0 bg-transparent px-1 py-1.5 text-sm text-charcoal placeholder:text-charcoal/35 focus:ring-0"
                             @input="onTagQueryInput"
                         />
@@ -359,7 +415,7 @@ onUnmounted(() => clearTimeout(tagDebounce));
                             :key="`${tagPanel}-${item.id}`"
                             type="button"
                             class="flex w-full items-center gap-3 px-3 py-2.5 text-left transition hover:bg-mist/60"
-                            @click="tagPanel === 'article' ? pickArticle(item) : pickEvent(item)"
+                            @click="pickTag(item)"
                         >
                             <img
                                 v-if="item.featured_image_url || item.cover_image_url"
@@ -368,12 +424,14 @@ onUnmounted(() => clearTimeout(tagDebounce));
                                 class="h-10 w-10 shrink-0 rounded-lg object-cover"
                             />
                             <div class="min-w-0 flex-1">
-                                <p class="truncate text-sm font-medium text-charcoal">{{ item.title }}</p>
+                                <p class="truncate text-sm font-medium text-charcoal">
+                                    {{ item.title || item.name }}
+                                </p>
                                 <p
-                                    v-if="item.starts_at_label || item.excerpt"
+                                    v-if="item.starts_at_label || item.excerpt || item.price_label"
                                     class="truncate text-xs text-charcoal/45"
                                 >
-                                    {{ item.starts_at_label || item.excerpt }}
+                                    {{ item.starts_at_label || item.excerpt || item.price_label }}
                                 </p>
                             </div>
                         </button>
@@ -420,6 +478,17 @@ onUnmounted(() => clearTimeout(tagDebounce));
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                 </svg>
                                 {{ t('community_tag_event') }}
+                            </button>
+                            <button
+                                type="button"
+                                class="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] transition"
+                                :class="tagPanel === 'vehicle' || selectedVehicle ? 'text-brand' : 'text-charcoal/55 hover:text-brand'"
+                                @click="openTagPanel('vehicle')"
+                            >
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 17h.01M16 17h.01M5 11l1.5-4.5A2 2 0 018.4 5h7.2a2 2 0 011.9 1.5L19 11m-14 0h14m-14 0v6a1 1 0 001 1h1m12-7v6a1 1 0 01-1 1h-1" />
+                                </svg>
+                                {{ t('community_tag_vehicle') }}
                             </button>
                         </template>
                     </div>
