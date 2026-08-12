@@ -80,6 +80,8 @@ return [
     'video_open_youtube' => 'Buka YouTube',
     'video_play' => 'Putar video',
     'video_empty' => 'Belum ada video dari channel. Coba refresh feed di admin atau cek',
+    'video_loading_more' => 'Memuat video lama…',
+    'video_end_of_list' => 'Semua video sudah dimuat',
     'footer_tagline' => 'Portal editorial otomotif modern untuk berita mobil, motor, review, dan tips berkendara.',
     'footer_categories' => 'Kategori',
     'footer_explore' => 'Jelajahi',

@@ -38,6 +38,9 @@ use App\Http\Controllers\VehicleCompareController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::get('/videos/feed', [HomeController::class, 'videosFeed'])
+    ->middleware('throttle:youtube-feed')
+    ->name('videos.feed');
 Route::get('/locale/{locale}', [LocaleController::class, 'update'])->name('locale.update');
 Route::get('/berita', [ArticleController::class, 'index'])->name('articles.index');
 Route::get('/berita/{slug}', [ArticleController::class, 'show'])->name('articles.show');

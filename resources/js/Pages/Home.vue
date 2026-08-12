@@ -16,6 +16,10 @@ const { t } = useI18n();
 
 const props = defineProps({
     videos: { type: Array, default: () => [] },
+    videosMeta: {
+        type: Object,
+        default: () => ({ total: 0, initial: 0, page_size: 8, has_more: false }),
+    },
     featured: { type: Object, default: () => ({ main: null, side: [] }) },
     popular: { type: Array, default: () => [] },
     latestReviews: { type: Array, default: () => [] },
@@ -67,7 +71,12 @@ const socialCardImage = computed(() => {
             </div>
         </div>
 
-        <VideoStage :videos="videos" :channel="youtubeChannel" :background-images="stageBackgrounds" />
+        <VideoStage
+            :videos="videos"
+            :videos-meta="videosMeta"
+            :channel="youtubeChannel"
+            :background-images="stageBackgrounds"
+        />
         <FeaturedStrip :main="featured.main" :side="featured.side" />
         <EventsStrip :events="upcomingEvents" />
         <BrandsStrip :brands="brands" />

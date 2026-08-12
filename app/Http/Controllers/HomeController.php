@@ -8,6 +8,8 @@ use App\Models\Category;
 use App\Models\Event;
 use App\Models\Gallery;
 use App\Support\YoutubeFeed;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -17,14 +19,14 @@ class HomeController extends Controller
     public function index(): Response
     {
         // Plain PHP arrays only — never cache Eloquent/Support collections.
-        $payload = Cache::remember('autoluz.home.page.v3', 120, fn () => $this->buildPayload());
+        $payload = Cache::remember('autoluz.home.page.v4', 120, fn () => $this->buildPayload());
 
         // If a bad/empty cache slipped in, rebuild once.
         if (! is_array($payload) || (empty($payload['featured']['main']) && empty($payload['popular']))) {
-            Cache::forget('autoluz.home.page.v3');
+            Cache::forget('autoluz.home.page.v4');
             $payload = $this->buildPayload();
             if (! empty($payload['featured']['main']) || ! empty($payload['popular'])) {
-                Cache::put('autoluz.home.page.v3', $payload, 120);
+                Cache::put('autoluz.home.page.v4', $payload, 120);
             }
         }
 
@@ -37,7 +39,9 @@ class HomeController extends Controller
     protected function buildPayload(): array
     {
         $homeVideoLimit = max(4, min(24, (int) config('youtube.homepage_limit', 8)));
-        $videos = array_values(array_slice(YoutubeFeed::playlist(), 0, $homeVideoLimit));
+        $playlist = YoutubeFeed::playlist();
+        $videos = array_values(array_slice($playlist, 0, $homeVideoLimit));
+        $videosTotal = count($playlist);
 
         $featuredArticles = Article::query()
             ->with('category')
@@ -164,6 +168,12 @@ class HomeController extends Controller
 
         return [
             'videos' => $videos,
+            'videosMeta' => [
+                'total' => $videosTotal,
+                'initial' => count($videos),
+                'page_size' => $homeVideoLimit,
+                'has_more' => $videosTotal > count($videos),
+            ],
             'youtubeChannel' => [
                 'id' => config('youtube.channel_id'),
                 'name' => config('youtube.channel_name'),
@@ -184,5 +194,26 @@ class HomeController extends Controller
             ],
             'recentGalleries' => $recentGalleries,
         ];
+    }
+
+    public function videosFeed(Request $request): JsonResponse
+    {
+        $offset = max(0, (int) $request->query('offset', 0));
+        $defaultLimit = max(4, min(24, (int) config('youtube.homepage_limit', 8)));
+        $limit = max(1, min(24, (int) $request->query('limit', $defaultLimit)));
+
+        $playlist = YoutubeFeed::playlist();
+        $total = count($playlist);
+        $data = array_values(array_slice($playlist, $offset, $limit));
+        $nextOffset = $offset + count($data);
+
+        return response()->json([
+            'data' => $data,
+            'offset' => $offset,
+            'next_offset' => $nextOffset,
+            'limit' => $limit,
+            'total' => $total,
+            'has_more' => $nextOffset < $total,
+        ]);
     }
 }

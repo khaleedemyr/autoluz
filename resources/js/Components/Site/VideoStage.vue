@@ -1,9 +1,14 @@
 <script setup>
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import axios from 'axios';
 import { useI18n } from '@/composables/useI18n';
 
 const props = defineProps({
     videos: { type: Array, default: () => [] },
+    videosMeta: {
+        type: Object,
+        default: () => ({ total: 0, initial: 0, page_size: 8, has_more: false }),
+    },
     backgroundImages: { type: Array, default: () => [] },
     channel: {
         type: Object,
@@ -15,26 +20,35 @@ const props = defineProps({
 });
 
 const { t } = useI18n();
-const activeId = ref(props.videos[0]?.id ?? null);
+const list = ref([...(props.videos || [])]);
+const hasMore = ref(Boolean(props.videosMeta?.has_more));
+const pageSize = computed(() => Math.max(4, Number(props.videosMeta?.page_size || 8)));
+const activeId = ref(list.value[0]?.id ?? null);
 const playing = ref(false);
+const loadingMore = ref(false);
+const listRoot = ref(null);
+const sentinel = ref(null);
+let observer = null;
 
 watch(
     () => props.videos,
-    (list) => {
-        if (!list.length) {
+    (incoming) => {
+        list.value = [...(incoming || [])];
+        hasMore.value = Boolean(props.videosMeta?.has_more);
+        if (!list.value.length) {
             activeId.value = null;
             playing.value = false;
             return;
         }
-        if (!list.some((v) => v.id === activeId.value)) {
-            activeId.value = list[0].id;
+        if (!list.value.some((v) => v.id === activeId.value)) {
+            activeId.value = list.value[0].id;
             playing.value = false;
         }
     },
     { immediate: true },
 );
 
-const active = computed(() => props.videos.find((v) => v.id === activeId.value) || props.videos[0] || null);
+const active = computed(() => list.value.find((v) => v.id === activeId.value) || list.value[0] || null);
 
 function selectVideo(id) {
     if (activeId.value !== id) {
@@ -51,6 +65,52 @@ const embedSrc = computed(() => {
     if (!active.value?.youtube_id) return null;
     return `https://www.youtube.com/embed/${active.value.youtube_id}?rel=0&autoplay=1`;
 });
+
+async function loadMore() {
+    if (!hasMore.value || loadingMore.value) return;
+    loadingMore.value = true;
+
+    try {
+        const { data } = await axios.get(route('videos.feed'), {
+            params: {
+                offset: list.value.length,
+                limit: pageSize.value,
+            },
+        });
+
+        const incoming = data?.data || [];
+        const known = new Set(list.value.map((v) => v.id));
+        const appended = incoming.filter((v) => v?.id && !known.has(v.id));
+        if (appended.length) {
+            list.value = [...list.value, ...appended];
+        }
+        hasMore.value = Boolean(data?.has_more) && incoming.length > 0;
+    } catch {
+        // keep hasMore so user can retry by scrolling again
+    } finally {
+        loadingMore.value = false;
+    }
+}
+
+onMounted(() => {
+    observer = new IntersectionObserver(
+        (entries) => {
+            if (entries.some((e) => e.isIntersecting)) {
+                loadMore();
+            }
+        },
+        {
+            root: listRoot.value,
+            rootMargin: '120px',
+            threshold: 0.01,
+        },
+    );
+    if (sentinel.value) {
+        observer.observe(sentinel.value);
+    }
+});
+
+onUnmounted(() => observer?.disconnect());
 </script>
 
 <template>
@@ -136,9 +196,12 @@ const embedSrc = computed(() => {
                     </div>
                 </div>
 
-                <div class="max-h-[28rem] space-y-2.5 overflow-y-auto overscroll-contain pr-1">
+                <div
+                    ref="listRoot"
+                    class="max-h-[28rem] space-y-2.5 overflow-y-auto overscroll-contain pr-1"
+                >
                     <button
-                        v-for="(video, index) in videos"
+                        v-for="(video, index) in list"
                         :key="video.id"
                         type="button"
                         class="group flex w-full gap-3 rounded-2xl border p-2.5 text-left transition duration-300 ease-editorial"
@@ -167,6 +230,13 @@ const embedSrc = computed(() => {
                             </p>
                         </div>
                     </button>
+
+                    <div ref="sentinel" class="py-2 text-center text-[11px] uppercase tracking-[0.14em] text-white/35">
+                        <span v-if="loadingMore">{{ t('video_loading_more') }}</span>
+                        <span v-else-if="!hasMore && list.length > (videosMeta?.initial || 0)">
+                            {{ t('video_end_of_list') }}
+                        </span>
+                    </div>
                 </div>
             </div>
 

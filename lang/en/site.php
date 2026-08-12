@@ -80,6 +80,8 @@ return [
     'video_open_youtube' => 'Open YouTube',
     'video_play' => 'Play video',
     'video_empty' => 'No videos from this channel yet. Try refreshing the feed in admin or check',
+    'video_loading_more' => 'Loading older videos…',
+    'video_end_of_list' => 'All videos loaded',
     'footer_tagline' => 'A modern automotive editorial portal for car news, bikes, reviews, and driving tips.',
     'footer_categories' => 'Categories',
     'footer_explore' => 'Explore',
