@@ -1,0 +1,1 @@
+function e(e,t=220){return String(e||``).normalize(`NFD`).replace(/[\u0300-\u036f]/g,``).toLowerCase().trim().replace(/[^a-z0-9\s-]/g,``).replace(/\s+/g,`-`).replace(/-+/g,`-`).replace(/^-+|-+$/g,``).slice(0,t)}export{e as t};
