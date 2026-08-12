@@ -136,7 +136,7 @@ onUnmounted(() => clearTimeout(debounceTimer));
                     <div class="min-w-0 flex-1">
                         <p class="truncate text-sm font-semibold text-charcoal">{{ user.name }}</p>
                         <p class="truncate text-xs text-charcoal/45">
-                            <span v-if="user.username">@{{ user.username }} · </span>{{ user.email }}
+                            <span v-if="user.username">@{{ user.username }}</span>
                         </p>
                     </div>
                     <span class="shrink-0 text-[10px] font-semibold uppercase tracking-[0.12em] text-brand">

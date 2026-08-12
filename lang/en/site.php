@@ -294,7 +294,7 @@ return [
     'community_group_add_member' => 'Add member',
     'community_group_add' => 'Add',
     'community_group_search_member_ph' => 'Search by name, username, or email...',
-    'community_group_search_member_hint' => 'Type at least 2 characters.',
+    'community_group_search_member_hint' => 'Type at least 2 characters. Email can be searched but is never shown.',
     'community_group_searching' => 'Searching...',
     'community_group_search_empty' => 'No users found.',
     'community_group_search_failed' => 'Failed to search users.',

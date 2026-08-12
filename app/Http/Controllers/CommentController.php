@@ -32,11 +32,11 @@ class CommentController extends Controller
             'name' => $data['name'],
             'email' => $data['email'] ?? null,
             'body' => $data['body'],
-            'is_visible' => true,
+            'is_visible' => false,
             'ip_address' => $request->ip(),
             'user_agent' => substr((string) $request->userAgent(), 0, 500),
         ]);
 
-        return back()->with('success', 'Komentar berhasil dikirim.');
+        return back()->with('success', 'Komentar terkirim dan menunggu moderasi admin.');
     }
 }

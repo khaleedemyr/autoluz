@@ -191,6 +191,7 @@ class CommunityGroupController extends Controller
 
         $like = '%'.str_replace(['%', '_'], ['\\%', '\\_'], $q).'%';
 
+        // Search may match email privately, but never expose email in the response.
         $users = User::query()
             ->whereNotIn('id', $memberIds)
             ->where(function ($query) use ($like) {
@@ -201,10 +202,7 @@ class CommunityGroupController extends Controller
             ->orderBy('name')
             ->limit(12)
             ->get()
-            ->map(fn (User $u) => [
-                ...$u->toPublicArray(),
-                'email' => $u->email,
-            ])
+            ->map(fn (User $u) => $u->toPublicArray())
             ->values();
 
         return response()->json(['users' => $users]);

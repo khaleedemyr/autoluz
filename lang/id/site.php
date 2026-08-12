@@ -294,7 +294,7 @@ return [
     'community_group_add_member' => 'Tambah anggota',
     'community_group_add' => 'Tambah',
     'community_group_search_member_ph' => 'Cari nama, username, atau email...',
-    'community_group_search_member_hint' => 'Ketik minimal 2 karakter.',
+    'community_group_search_member_hint' => 'Ketik minimal 2 karakter. Email bisa dicari, tapi tidak ditampilkan.',
     'community_group_searching' => 'Mencari...',
     'community_group_search_empty' => 'Tidak ada user ditemukan.',
     'community_group_search_failed' => 'Gagal mencari user.',
