@@ -8,7 +8,10 @@ return [
         'YOUTUBE_FEED_URL',
         'https://www.youtube.com/feeds/videos.xml?channel_id='.env('YOUTUBE_CHANNEL_ID', 'UCPvSp1UdLh9QC7XXMTgpNjQ')
     ),
-    'import_limit' => (int) env('YOUTUBE_IMPORT_LIMIT', 15),
+    // Max shorts to show (channel Shorts tab + pagination). Raise if channel has more.
+    'import_limit' => (int) env('YOUTUBE_IMPORT_LIMIT', 2000),
+    'shorts_only' => filter_var(env('YOUTUBE_SHORTS_ONLY', true), FILTER_VALIDATE_BOOLEAN),
+    'shorts_max_pages' => (int) env('YOUTUBE_SHORTS_MAX_PAGES', 50),
     // Cache TTL in seconds — homepage embeds refresh from channel automatically.
     'cache_ttl' => (int) env('YOUTUBE_CACHE_TTL', 1800),
 ];

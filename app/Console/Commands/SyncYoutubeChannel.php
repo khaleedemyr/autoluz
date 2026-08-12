@@ -10,7 +10,7 @@ class SyncYoutubeChannel extends Command
     protected $signature = 'youtube:sync
         {--dry-run : Preview videos without refreshing cache}';
 
-    protected $description = 'Refresh live YouTube channel playlist cache (apih mototv) for homepage embeds';
+    protected $description = 'Refresh live YouTube Shorts playlist cache (apih mototv) for homepage embeds';
 
     public function handle(): int
     {

@@ -28,11 +28,11 @@ function refreshFeed() {
                 <div>
                     <h2 class="font-display text-xl tracking-[-0.03em]">Live dari YouTube</h2>
                     <p class="mt-1 max-w-2xl text-sm text-neutral-500">
-                        Video tidak disimpan ke database. Homepage embed langsung dari channel
+                        Playlist Shorts live dari channel
                         <a :href="channel.url" target="_blank" rel="noopener" class="font-medium text-brand hover:underline">
                             {{ channel.name }}
-                        </a>.
-                        Cache refresh otomatis tiap {{ cacheTtlMinutes }} menit; video baru akan muncul sendiri.
+                        </a>
+                        (tanpa simpan ke database). Cache refresh otomatis tiap {{ cacheTtlMinutes }} menit.
                     </p>
                 </div>
                 <button
