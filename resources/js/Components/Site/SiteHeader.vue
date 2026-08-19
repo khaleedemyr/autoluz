@@ -26,7 +26,22 @@ let closeTimer = null;
 const activeItem = computed(() => items.value.find((i) => i.key === activeKey.value) || null);
 const megaOpen = computed(() => !!activeItem.value || activeKey.value === 'more');
 const authUser = computed(() => page.props.auth?.user || null);
-const newsMegaOpen = computed(() => items.value.some((row) => row.key === activeKey.value) || activeKey.value === 'more');
+const newsMegaOpen = computed(() => items.value.some((row) => row.key === activeKey.value));
+const moreMegaOpen = computed(() => activeKey.value === 'more');
+const communityBadge = computed(() => Number(authUser.value?.unread_messages || 0));
+const tabCls = 'relative flex h-full flex-col items-center justify-center gap-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] transition';
+const tabIdle = 'text-white/45';
+const tabOn = 'text-brand';
+
+function isPath(prefix) {
+    const url = page.url || '';
+    return prefix === '/' ? url === '/' : url.startsWith(prefix);
+}
+
+function toggleMore() {
+    mobileOpen.value = !mobileOpen.value;
+    searchOpen.value = false;
+}
 
 const navLink = 'relative shrink-0 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/55 transition hover:text-white';
 const navLinkActive = 'text-white after:absolute after:inset-x-3 after:bottom-1 after:h-px after:bg-brand';
@@ -124,7 +139,7 @@ onUnmounted(() => {
                 ? 'border-white/10 bg-charcoal/55 shadow-[0_12px_40px_rgba(0,0,0,0.28)]'
                 : 'border-white/10 bg-charcoal/95'"
         >
-            <div class="container-editorial flex h-[4.25rem] items-center gap-4 lg:h-[4.75rem] lg:gap-6">
+            <div class="container-editorial flex h-[4.25rem] items-center gap-2 lg:h-[4.75rem] lg:gap-6">
                 <Link
                     :href="route('home')"
                     class="group relative flex shrink-0 flex-col justify-center"
@@ -174,10 +189,21 @@ onUnmounted(() => {
                         type="button"
                         class="inline-flex items-center gap-1"
                         :class="[navLink, newsMegaOpen ? navLinkActive : '']"
-                        @mouseenter="openMega(items[0]?.key || 'more')"
+                        @mouseenter="openMega(items[0]?.key)"
                         @click="router.visit(route('articles.index'))"
                     >
                         {{ t('news_nav') }}
+                        <svg class="h-2.5 w-2.5 opacity-60" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                            <path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.5" />
+                        </svg>
+                    </button>
+                    <button
+                        type="button"
+                        class="inline-flex items-center gap-1"
+                        :class="[navLink, moreMegaOpen ? navLinkActive : '']"
+                        @mouseenter="openMega('more')"
+                    >
+                        {{ t('see_more') }}
                         <svg class="h-2.5 w-2.5 opacity-60" viewBox="0 0 12 12" fill="none" aria-hidden="true">
                             <path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.5" />
                         </svg>
@@ -197,7 +223,7 @@ onUnmounted(() => {
                     <span :class="divider" />
 
                     <template v-if="authUser">
-                        <CommunityNotificationBell class="hidden lg:block" />
+                        <CommunityNotificationBell />
                         <Link
                             :href="route('community.messages.index')"
                             :class="['hidden lg:inline-flex', iconBtn]"
@@ -351,18 +377,6 @@ onUnmounted(() => {
                             <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35m1.6-5.4a7 7 0 11-14 0 7 7 0 0114 0z" />
                         </svg>
                     </button>
-                    <button
-                        type="button"
-                        class="inline-flex h-10 w-10 items-center justify-center rounded-full text-white/75 lg:hidden"
-                        aria-label="Menu"
-                        @click="mobileOpen = !mobileOpen"
-                    >
-                        <span class="flex flex-col gap-1.5">
-                            <span class="block h-0.5 w-5 bg-current" />
-                            <span class="block h-0.5 w-5 bg-current" />
-                            <span class="block h-0.5 w-5 bg-current" />
-                        </span>
-                    </button>
                 </div>
             </div>
 
@@ -409,7 +423,7 @@ onUnmounted(() => {
                     @mouseleave="scheduleClose"
                 >
                     <div class="border-b border-[var(--line)] bg-white text-charcoal shadow-lift">
-                        <div class="container-editorial flex gap-1 overflow-x-auto border-b border-[var(--line)]">
+                        <div v-if="newsMegaOpen" class="container-editorial flex gap-1 overflow-x-auto border-b border-[var(--line)]">
                             <button
                                 v-for="item in items"
                                 :key="item.key"
@@ -420,14 +434,6 @@ onUnmounted(() => {
                             >
                                 {{ item.name }}
                             </button>
-                            <button
-                                type="button"
-                                class="shrink-0 border-b-2 px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.16em] transition"
-                                :class="activeKey === 'more' ? 'border-brand text-brand' : 'border-transparent text-neutral-400 hover:text-charcoal'"
-                                @mouseenter="openMega('more')"
-                            >
-                                {{ t('see_more') }}
-                            </button>
                         </div>
                         <MegaMenu
                             v-if="activeItem"
@@ -435,7 +441,7 @@ onUnmounted(() => {
                             bare
                             @navigate="closeMega"
                         />
-                        <div v-else-if="activeKey === 'more'" class="container-editorial py-6">
+                        <div v-else-if="moreMegaOpen" class="container-editorial py-6">
                             <div class="mb-5 flex flex-wrap gap-2 border-b border-[var(--line)] pb-5">
                                 <Link
                                     :href="route('brands.index')"
@@ -459,25 +465,11 @@ onUnmounted(() => {
                                     {{ t('credit_nav') }}
                                 </Link>
                                 <Link
-                                    :href="route('shop.index')"
-                                    class="rounded-full border border-charcoal/15 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] transition hover:border-brand hover:text-brand"
-                                    @click="closeMega"
-                                >
-                                    {{ t('shop_nav') }}
-                                </Link>
-                                <Link
                                     :href="route('galleries.index')"
                                     class="rounded-full border border-charcoal/15 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] transition hover:border-brand hover:text-brand"
                                     @click="closeMega"
                                 >
                                     {{ t('galleries_nav') }}
-                                </Link>
-                                <Link
-                                    :href="route('articles.index')"
-                                    class="rounded-full border border-charcoal/15 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] transition hover:border-brand hover:text-brand"
-                                    @click="closeMega"
-                                >
-                                    {{ t('see_all_articles') }}
                                 </Link>
                             </div>
                             <p class="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-400">
@@ -502,10 +494,10 @@ onUnmounted(() => {
 
         <div
             v-if="mobileOpen"
-            class="relative z-50 border-b border-white/10 lg:hidden transition-colors duration-300"
+            class="relative z-50 max-h-[min(70dvh,calc(100dvh-8rem))] overflow-y-auto border-b border-white/10 lg:hidden transition-colors duration-300"
             :class="scrolled ? 'bg-charcoal/60 backdrop-blur-xl' : 'bg-charcoal'"
         >
-            <nav class="container-editorial flex flex-col py-3">
+            <nav class="container-editorial flex flex-col py-3 pb-4">
                 <div class="mb-2 flex items-center gap-2 px-2">
                     <button
                         type="button"
@@ -524,68 +516,21 @@ onUnmounted(() => {
                         {{ t('lang_en') }}
                     </button>
                 </div>
-                <Link
-                    :href="route('home')"
-                    class="rounded-lg px-2 py-3 text-sm font-semibold uppercase tracking-[0.14em] text-white/85"
-                    @click="mobileOpen = false"
-                >
-                    {{ t('home') }}
-                </Link>
-                <Link
-                    :href="route('events.index')"
-                    class="rounded-lg px-2 py-3 text-sm font-semibold uppercase tracking-[0.14em] text-white/85"
-                    @click="mobileOpen = false"
-                >
-                    {{ t('events_nav') }}
-                </Link>
-                <Link
-                    :href="route('community.index')"
-                    class="rounded-lg px-2 py-3 text-sm font-semibold uppercase tracking-[0.14em] text-white/85"
-                    @click="mobileOpen = false"
-                >
-                    {{ t('community_nav') }}
-                </Link>
-                <Link
-                    :href="route('shop.index')"
-                    class="rounded-lg px-2 py-3 text-sm font-semibold uppercase tracking-[0.14em] text-white/85"
-                    @click="mobileOpen = false"
-                >
-                    {{ t('shop_nav') }}
-                </Link>
-                <Link
-                    :href="route('shop.wishlist')"
-                    class="rounded-lg px-2 py-3 text-sm font-semibold uppercase tracking-[0.14em] text-white/85"
-                    @click="mobileOpen = false"
-                >
-                    {{ t('shop_wishlist') }}
-                </Link>
-                <Link
-                    :href="route('shop.cart')"
-                    class="rounded-lg px-2 py-3 text-sm font-semibold uppercase tracking-[0.14em] text-white/85"
-                    @click="mobileOpen = false"
-                >
-                    {{ t('shop_cart') }}
-                </Link>
                 <template v-if="authUser">
+                    <Link
+                        v-if="authUser.username"
+                        :href="route('community.profile', authUser.username)"
+                        class="rounded-lg px-2 py-3 text-sm font-semibold uppercase tracking-[0.14em] text-white/85"
+                        @click="mobileOpen = false"
+                    >
+                        {{ authUser.name }}
+                    </Link>
                     <Link
                         :href="route('shop.orders.index')"
                         class="rounded-lg px-2 py-3 text-sm font-semibold uppercase tracking-[0.14em] text-white/85"
                         @click="mobileOpen = false"
                     >
                         {{ t('shop_orders') }}
-                    </Link>
-                    <Link
-                        :href="route('community.notifications')"
-                        class="rounded-lg px-2 py-3 text-sm font-semibold uppercase tracking-[0.14em] text-white/85"
-                        @click="mobileOpen = false"
-                    >
-                        {{ t('community_notifications') }}
-                        <span
-                            v-if="authUser.unread_notifications"
-                            class="ml-2 rounded-full bg-brand px-1.5 py-0.5 text-[10px] text-white"
-                        >
-                            {{ authUser.unread_notifications }}
-                        </span>
                     </Link>
                     <Link
                         :href="route('community.messages.index')"
@@ -606,14 +551,6 @@ onUnmounted(() => {
                         @click="mobileOpen = false"
                     >
                         {{ t('community_settings') }}
-                    </Link>
-                    <Link
-                        v-if="authUser.username"
-                        :href="route('community.profile', authUser.username)"
-                        class="rounded-lg px-2 py-3 text-sm font-semibold uppercase tracking-[0.14em] text-white/85"
-                        @click="mobileOpen = false"
-                    >
-                        {{ authUser.name }}
                     </Link>
                     <Link
                         v-if="authUser.is_seller"
@@ -657,6 +594,13 @@ onUnmounted(() => {
                         {{ t('community_register') }}
                     </Link>
                 </template>
+                <Link
+                    :href="route('articles.index')"
+                    class="rounded-lg px-2 py-3 text-sm font-semibold uppercase tracking-[0.14em] text-white/85"
+                    @click="mobileOpen = false"
+                >
+                    {{ t('news_nav') }}
+                </Link>
                 <Link
                     :href="route('brands.index')"
                     class="rounded-lg px-2 py-3 text-sm font-semibold uppercase tracking-[0.14em] text-white/85"
@@ -705,5 +649,74 @@ onUnmounted(() => {
                 </Link>
             </nav>
         </div>
+
+        <Teleport to="body">
+        <nav
+            class="fixed inset-x-0 bottom-0 z-50 border-t border-white/10 bg-charcoal/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden"
+            aria-label="Mobile"
+        >
+            <div class="grid h-14 grid-cols-5">
+                <Link
+                    :href="route('home')"
+                    :class="[tabCls, isPath('/') && !mobileOpen ? tabOn : tabIdle]"
+                >
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1v-9.5z" />
+                    </svg>
+                    {{ t('home') }}
+                </Link>
+                <Link
+                    :href="route('shop.index')"
+                    :class="[tabCls, isPath('/toko') && !mobileOpen ? tabOn : tabIdle]"
+                >
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 9h16l-1 11H5L4 9zm4-4a4 4 0 018 0" />
+                    </svg>
+                    {{ t('shop_nav') }}
+                </Link>
+                <Link
+                    :href="route('community.index')"
+                    :class="[tabCls, isPath('/komunitas') && !mobileOpen ? tabOn : tabIdle]"
+                >
+                    <span class="relative">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M17 20v-1a4 4 0 00-4-4H7a4 4 0 00-4 4v1m14-10a3 3 0 11-6 0 3 3 0 016 0zm6 10v-1a4 4 0 00-3-3.87M16 3.13a3 3 0 010 5.74" />
+                        </svg>
+                        <span
+                            v-if="communityBadge"
+                            class="absolute -right-2 -top-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-brand px-0.5 text-[8px] font-bold leading-none text-white"
+                        >
+                            {{ communityBadge > 9 ? '9+' : communityBadge }}
+                        </span>
+                    </span>
+                    {{ t('community_nav') }}
+                </Link>
+                <Link
+                    :href="route('events.index')"
+                    :class="[tabCls, isPath('/event') && !mobileOpen ? tabOn : tabIdle]"
+                >
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3M4 11h16M6 5h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V7a2 2 0 012-2z" />
+                    </svg>
+                    {{ t('events_nav') }}
+                </Link>
+                <button
+                    type="button"
+                    :class="[tabCls, mobileOpen ? tabOn : tabIdle]"
+                    :aria-label="t('see_more')"
+                    :aria-expanded="mobileOpen"
+                    @click="toggleMore"
+                >
+                    <svg v-if="!mobileOpen" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M4 12h16M4 17h16" />
+                    </svg>
+                    <svg v-else class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 6l12 12M18 6L6 18" />
+                    </svg>
+                    {{ t('see_more') }}
+                </button>
+            </div>
+        </nav>
+        </Teleport>
     </header>
 </template>

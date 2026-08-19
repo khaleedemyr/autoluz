@@ -65,7 +65,7 @@ onUnmounted(() => document.removeEventListener('click', onDocClick));
 
         <div
             v-if="open"
-            class="absolute right-0 top-full z-[60] mt-2 w-80 overflow-hidden rounded-2xl border border-[var(--line)] bg-white text-charcoal shadow-lift sm:w-96"
+            class="absolute right-0 top-full z-[60] mt-2 w-[min(20rem,calc(100vw-1.5rem))] overflow-hidden rounded-2xl border border-[var(--line)] bg-white text-charcoal shadow-lift sm:w-96"
         >
             <div class="flex items-center justify-between border-b border-[var(--line)] px-4 py-3">
                 <p class="text-[11px] font-semibold uppercase tracking-[0.14em]">{{ t('community_notifications') }}</p>

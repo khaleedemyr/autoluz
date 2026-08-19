@@ -57,7 +57,7 @@ const visible = computed(() => list.value.length > 0 && !onComparePage.value);
     >
         <div
             v-if="visible"
-            class="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--line)] bg-white/95 p-3 shadow-[0_-12px_40px_rgba(0,0,0,0.12)] backdrop-blur"
+            class="fixed inset-x-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-40 border-t border-[var(--line)] bg-white/95 p-3 shadow-[0_-12px_40px_rgba(0,0,0,0.12)] backdrop-blur lg:bottom-0"
         >
             <div class="container-editorial flex flex-wrap items-center justify-between gap-3">
                 <div class="flex min-w-0 flex-1 items-center gap-3 overflow-x-auto">
@@ -104,5 +104,5 @@ const visible = computed(() => list.value.length > 0 && !onComparePage.value);
             </div>
         </div>
     </Transition>
-    <div v-if="visible" class="h-20 shrink-0" aria-hidden="true" />
+    <div v-if="visible" class="h-[8.5rem] shrink-0 lg:h-20" aria-hidden="true" />
 </template>

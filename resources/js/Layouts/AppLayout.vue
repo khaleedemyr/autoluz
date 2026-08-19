@@ -17,7 +17,7 @@ const pageKey = computed(() => String(page.url || '').split('?')[0]);
 </script>
 
 <template>
-    <div class="flex min-h-screen flex-col">
+    <div class="flex min-h-screen flex-col pb-[calc(3.5rem+env(safe-area-inset-bottom))] lg:pb-0">
         <SiteHeader />
         <!-- Spacer matches fixed header height -->
         <div class="h-[4.25rem] shrink-0 lg:h-[4.75rem]" aria-hidden="true" />
