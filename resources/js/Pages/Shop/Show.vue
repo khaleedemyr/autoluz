@@ -3,15 +3,20 @@ import { computed, ref } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import ProductCard from '@/Components/Site/ProductCard.vue';
+import ProductReviews from '@/Components/Site/ProductReviews.vue';
+import StarRating from '@/Components/Site/StarRating.vue';
 import { useI18n } from '@/composables/useI18n';
-import { swalToast, swalError } from '@/utils/swal';
+import { swalError, swalToast } from '@/utils/swal';
+import { useShopActions } from '@/composables/useShopActions';
 
 const props = defineProps({
     product: { type: Object, required: true },
     related: { type: Array, default: () => [] },
+    reviews: { type: Object, default: () => ({ count: 0, items: [] }) },
 });
 
 const { t } = useI18n();
+const { isWished, toggleWishlist } = useShopActions();
 const gallery = computed(() => {
     const items = [];
     const seen = new Set();
@@ -90,6 +95,11 @@ function addToCart() {
                 <div>
                     <p class="section-label">{{ product.category?.name || t('shop_label') }}</p>
                     <h1 class="font-display mt-3 text-4xl tracking-[-0.04em] sm:text-5xl">{{ product.name }}</h1>
+                    <a v-if="reviews.count" href="#ulasan" class="mt-3 inline-flex items-center gap-2 text-sm text-neutral-600 hover:text-brand">
+                        <StarRating :model-value="reviews.avg" />
+                        <span class="font-semibold text-charcoal">{{ reviews.avg_label }}</span>
+                        <span>({{ t('shop_reviews_count', { count: reviews.count }) }})</span>
+                    </a>
                     <p class="mt-4 font-display text-3xl text-brand">{{ selected?.price_label || product.price_label }}</p>
                     <p v-if="product.excerpt" class="mt-4 text-neutral-600">{{ product.excerpt }}</p>
 
@@ -139,15 +149,28 @@ function addToCart() {
                         >
                             {{ t('shop_add_cart') }}
                         </button>
+                        <button
+                            type="button"
+                            class="inline-flex items-center gap-2 rounded-full border border-[var(--line)] px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] transition hover:border-brand hover:text-brand"
+                            :class="isWished(product.id) ? 'border-brand text-brand' : ''"
+                            @click="toggleWishlist(product)"
+                        >
+                            <svg class="h-4 w-4" viewBox="0 0 24 24" :fill="isWished(product.id) ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="1.8">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 21s-6.5-4.35-9.33-8.5C.8 9.7 1.6 5.9 5 4.6c1.9-.72 3.9-.1 5 1.4 1.1-1.5 3.1-2.12 5-1.4 3.4 1.3 4.2 5.1 2.33 7.9C18.5 16.65 12 21 12 21z" />
+                            </svg>
+                            {{ isWished(product.id) ? t('shop_wishlist_remove') : t('shop_wishlist_add') }}
+                        </button>
                     </div>
                 </div>
             </div>
 
             <article v-if="product.description_html" class="prose prose-neutral mt-12 max-w-none" v-html="product.description_html" />
 
+            <ProductReviews :product="product" :reviews="reviews" />
+
             <div v-if="related.length" class="mt-16">
                 <h2 class="font-display text-3xl tracking-[-0.04em]">{{ t('shop_related') }}</h2>
-                <div class="mt-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 lg:gap-5">
+                <div class="mt-6 grid grid-cols-2 gap-x-3 gap-y-8 sm:grid-cols-3 sm:gap-x-5 sm:gap-y-10 xl:grid-cols-4">
                     <ProductCard v-for="item in related" :key="item.id" :product="item" />
                 </div>
             </div>

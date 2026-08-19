@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Services\CartService;
+use App\Services\WishlistService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -42,6 +43,7 @@ class AuthenticatedSessionController extends Controller
         $request->authenticate();
 
         app(CartService::class)->mergeGuestCartIntoUser($request->user(), $guestSessionId);
+        app(WishlistService::class)->mergeGuestWishlistIntoUser($request->user(), $guestSessionId);
 
         $request->session()->regenerate();
 

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\CartService;
+use App\Services\WishlistService;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -59,6 +60,7 @@ class RegisteredUserController extends Controller
         $guestSessionId = $request->session()->getId();
         Auth::login($user);
         app(CartService::class)->mergeGuestCartIntoUser($user, $guestSessionId);
+        app(WishlistService::class)->mergeGuestWishlistIntoUser($user, $guestSessionId);
 
         return redirect()->intended(route('community.index', absolute: false));
     }

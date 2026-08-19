@@ -65,6 +65,9 @@ class OrderItem extends Model
             'line_total' => $this->lineTotal(),
             'line_total_label' => MediaUrl::formatRupiah($this->lineTotal()),
             'image_url' => MediaUrl::absolute($this->image_url),
+            'url' => $this->relationLoaded('product') && $this->product
+                ? route('shop.show', $this->product->slug)
+                : null,
         ];
     }
 }

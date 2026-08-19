@@ -4,6 +4,7 @@ import { Link, router, usePage } from '@inertiajs/vue3';
 import MegaMenu from '@/Components/Site/MegaMenu.vue';
 import CommunityNotificationBell from '@/Components/Community/CommunityNotificationBell.vue';
 import CartIcon from '@/Components/Site/CartIcon.vue';
+import WishlistIcon from '@/Components/Site/WishlistIcon.vue';
 import { useI18n } from '@/composables/useI18n';
 
 const page = usePage();
@@ -274,6 +275,13 @@ onUnmounted(() => {
                                     {{ t('community_profile') }}
                                 </Link>
                                 <Link
+                                    :href="route('shop.wishlist')"
+                                    class="block px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] hover:bg-mist"
+                                    @click="closeAccount"
+                                >
+                                    {{ t('shop_wishlist') }}
+                                </Link>
+                                <Link
                                     :href="route('shop.orders.index')"
                                     class="block px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] hover:bg-mist"
                                     @click="closeAccount"
@@ -358,6 +366,7 @@ onUnmounted(() => {
                         </Link>
                     </template>
 
+                    <WishlistIcon />
                     <CartIcon />
 
                     <button
@@ -552,6 +561,13 @@ onUnmounted(() => {
                     @click="mobileOpen = false"
                 >
                     {{ t('shop_nav') }}
+                </Link>
+                <Link
+                    :href="route('shop.wishlist')"
+                    class="rounded-lg px-2 py-3 text-sm font-semibold uppercase tracking-[0.14em] text-white/85"
+                    @click="mobileOpen = false"
+                >
+                    {{ t('shop_wishlist') }}
                 </Link>
                 <Link
                     :href="route('shop.cart')"

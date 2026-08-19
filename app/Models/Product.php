@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class Product extends Model
@@ -56,6 +57,20 @@ class Product extends Model
         return $this->hasMany(ProductVariant::class)->orderBy('sort_order')->orderBy('id');
     }
 
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(ProductReview::class);
+    }
+
+    public function scopeWithRating(Builder $query): Builder
+    {
+        if (! Schema::hasTable('product_reviews')) {
+            return $query;
+        }
+
+        return $query->withAvg('reviews', 'rating')->withCount('reviews');
+    }
+
     public function scopePublished(Builder $query): Builder
     {
         return $query
@@ -99,6 +114,16 @@ class Product extends Model
             ?: MediaUrl::absolute($this->relationLoaded('images') ? $this->images->first()?->image_url : null);
     }
 
+    public function defaultVariant(): ?ProductVariant
+    {
+        $variants = $this->relationLoaded('variants')
+            ? $this->variants->where('is_active', true)->values()
+            : $this->variants()->active()->orderBy('sort_order')->orderBy('id')->get();
+
+        return $variants->first(fn (ProductVariant $variant) => (int) $variant->stock > 0)
+            ?: $variants->first();
+    }
+
     public function toCardArray(): array
     {
         $price = $this->minPrice();
@@ -112,7 +137,12 @@ class Product extends Model
             'price_from' => $price,
             'price_label' => $price !== null ? MediaUrl::formatRupiah($price) : null,
             'in_stock' => $this->totalStock() > 0,
+            'default_variant_id' => $this->defaultVariant()?->id,
             'featured' => $this->featured,
+            'rating_avg' => $this->reviews_count
+                ? round((float) ($this->reviews_avg_rating ?? 0), 1)
+                : null,
+            'reviews_count' => (int) ($this->reviews_count ?? 0),
             'url' => route('shop.show', $this->slug),
             'store' => $this->relationLoaded('store') && $this->store ? $this->store->toCardArray() : null,
             'category' => $this->relationLoaded('category') && $this->category ? [

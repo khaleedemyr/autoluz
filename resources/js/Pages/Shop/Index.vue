@@ -40,7 +40,7 @@ const { t } = useI18n();
         />
 
         <section class="container-editorial py-8 lg:py-10">
-            <div v-if="products.data?.length" class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 lg:gap-5">
+            <div v-if="products.data?.length" class="grid grid-cols-2 gap-x-3 gap-y-8 sm:grid-cols-3 sm:gap-x-5 sm:gap-y-10 xl:grid-cols-4">
                 <ProductCard v-for="product in products.data" :key="product.id" :product="product" />
             </div>
             <p v-else class="rounded-2xl border border-dashed border-[var(--line)] py-16 text-center text-sm text-neutral-500">

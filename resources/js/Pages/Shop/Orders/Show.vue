@@ -104,6 +104,13 @@ onMounted(() => {
                             <div class="min-w-0 flex-1">
                                 <p class="font-semibold">{{ item.name }}</p>
                                 <p class="text-xs text-neutral-500">{{ item.variant_label }} · ×{{ item.qty }}</p>
+                                <Link
+                                    v-if="order.is_purchased && item.url"
+                                    :href="`${item.url}#ulasan`"
+                                    class="mt-1 inline-block text-[11px] font-semibold uppercase tracking-[0.12em] text-brand"
+                                >
+                                    {{ t('shop_review_write') }}
+                                </Link>
                             </div>
                             <p class="font-semibold">{{ item.line_total_label }}</p>
                         </div>

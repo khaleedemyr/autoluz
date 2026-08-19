@@ -46,6 +46,8 @@ use App\Http\Controllers\SearchController;
 use App\Http\Controllers\ShopController;
 use App\Http\Controllers\ShopOrderController;
 use App\Http\Controllers\CartController;
+use App\Http\Controllers\WishlistController;
+use App\Http\Controllers\ProductReviewController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\MidtransNotificationController;
 use App\Http\Controllers\SitemapController;
@@ -98,6 +100,13 @@ Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap')
 
 Route::get('/toko', [ShopController::class, 'index'])->name('shop.index');
 Route::get('/toko/m/{store:slug}', [ShopController::class, 'showStore'])->name('shop.stores.show');
+Route::get('/toko/wishlist', [WishlistController::class, 'show'])->name('shop.wishlist');
+Route::post('/toko/wishlist', [WishlistController::class, 'toggle'])
+    ->middleware('throttle:40,1')
+    ->name('shop.wishlist.toggle');
+Route::delete('/toko/wishlist/{product}', [WishlistController::class, 'destroy'])
+    ->middleware('throttle:40,1')
+    ->name('shop.wishlist.destroy');
 Route::get('/toko/keranjang', [CartController::class, 'show'])->name('shop.cart');
 Route::post('/toko/keranjang', [CartController::class, 'store'])
     ->middleware('throttle:40,1')
@@ -131,6 +140,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/toko/pesanan/{order:number}/bayar', [ShopOrderController::class, 'pay'])
         ->middleware('throttle:20,1')
         ->name('shop.orders.pay');
+    Route::post('/toko/{product:slug}/ulasan', [ProductReviewController::class, 'store'])
+        ->middleware('throttle:10,1')
+        ->name('shop.reviews.store');
 });
 
 Route::get('/toko/{product:slug}', [ShopController::class, 'show'])->name('shop.show');

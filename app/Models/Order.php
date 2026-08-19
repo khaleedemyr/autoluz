@@ -81,6 +81,24 @@ class Order extends Model
         return $this->hasMany(OrderItem::class);
     }
 
+    /**
+     * @return list<string>
+     */
+    public static function purchasedStatuses(): array
+    {
+        return [
+            self::STATUS_PAID,
+            self::STATUS_PACKED,
+            self::STATUS_SHIPPED,
+            self::STATUS_COMPLETED,
+        ];
+    }
+
+    public function isPurchased(): bool
+    {
+        return in_array($this->status, self::purchasedStatuses(), true);
+    }
+
     public function isPendingPayment(): bool
     {
         return $this->status === self::STATUS_PENDING;
@@ -183,6 +201,7 @@ class Order extends Model
             'paid_at' => optional($this->paid_at)?->toIso8601String(),
             'created_at' => optional($this->created_at)?->toIso8601String(),
             'timeline' => $this->timeline(),
+            'is_purchased' => $this->isPurchased(),
             'items' => $this->relationLoaded('items')
                 ? $this->items->map->toArrayPublic()->values()->all()
                 : [],

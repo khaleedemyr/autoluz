@@ -112,6 +112,17 @@ class HandleInertiaRequests extends Middleware
                     ];
                 }
             },
+            'wishlist' => function () use ($request) {
+                try {
+                    return app(\App\Services\WishlistService::class)
+                        ->summaryForRequest($request->user(), $request);
+                } catch (\Throwable) {
+                    return [
+                        'count' => 0,
+                        'product_ids' => [],
+                    ];
+                }
+            },
         ];
     }
 }

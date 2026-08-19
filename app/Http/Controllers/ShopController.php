@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use App\Models\ShopCategory;
 use App\Models\Store;
+use App\Services\ProductReviewService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -50,7 +52,7 @@ class ShopController extends Controller
         ]);
     }
 
-    public function show(Product $product): Response
+    public function show(Request $request, Product $product, ProductReviewService $reviews): Response
     {
         $product->load(['category', 'images', 'variants', 'store']);
 
@@ -61,8 +63,13 @@ class ShopController extends Controller
             404
         );
 
+        if (Schema::hasTable('product_reviews')) {
+            $product->loadCount('reviews')->loadAvg('reviews', 'rating');
+        }
+
         $related = Product::query()
             ->published()
+            ->withRating()
             ->with(['category', 'variants', 'images', 'store'])
             ->where('id', '!=', $product->id)
             ->when($product->shop_category_id, fn ($q) => $q->where('shop_category_id', $product->shop_category_id))
@@ -76,6 +83,7 @@ class ShopController extends Controller
         return Inertia::render('Shop/Show', [
             'product' => $product->toDetailArray(),
             'related' => $related,
+            'reviews' => $reviews->forProduct($product, $request->user()),
         ]);
     }
 
@@ -93,6 +101,7 @@ class ShopController extends Controller
 
         $products = Product::query()
             ->published()
+            ->withRating()
             ->with(['category', 'variants', 'images', 'store'])
             ->when($storeId, fn ($query) => $query->where('store_id', $storeId))
             ->when($q !== '', function ($query) use ($q) {
