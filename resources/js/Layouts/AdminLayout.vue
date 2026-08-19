@@ -41,6 +41,16 @@ const navGroups = [
         ],
     },
     {
+        key: 'toko',
+        label: 'Toko',
+        items: [
+            { label: 'Produk', route: 'admin.products.index', match: 'admin.products.*', permission: 'products' },
+            { label: 'Kategori Toko', route: 'admin.shop-categories.index', match: 'admin.shop-categories.*', permission: 'products' },
+            { label: 'Pesanan', route: 'admin.orders.index', match: 'admin.orders.*', permission: 'orders' },
+            { label: 'Pengaturan Toko', route: 'admin.shop-settings.edit', match: 'admin.shop-settings.*', permission: 'products' },
+        ],
+    },
+    {
         key: 'audiens',
         label: 'Audiens',
         items: [

@@ -10,6 +10,7 @@ import SocialLinks from '@/Components/Site/SocialLinks.vue';
 import EventsStrip from '@/Components/Site/EventsStrip.vue';
 import BrandsStrip from '@/Components/Site/BrandsStrip.vue';
 import GalleriesStrip from '@/Components/Site/GalleriesStrip.vue';
+import ShopStrip from '@/Components/Site/ShopStrip.vue';
 import { useI18n } from '@/composables/useI18n';
 
 const { t } = useI18n();
@@ -28,6 +29,7 @@ const props = defineProps({
     upcomingEvents: { type: Array, default: () => [] },
     brands: { type: Object, default: () => ({ cars: [], motos: [] }) },
     recentGalleries: { type: Array, default: () => [] },
+    shopProducts: { type: Array, default: () => [] },
     youtubeChannel: {
         type: Object,
         default: () => ({
@@ -80,6 +82,7 @@ const socialCardImage = computed(() => {
         <FeaturedStrip :main="featured.main" :side="featured.side" />
         <EventsStrip :events="upcomingEvents" />
         <BrandsStrip :brands="brands" />
+        <ShopStrip :products="shopProducts" />
         <GalleriesStrip :galleries="recentGalleries" />
 
         <section class="container-editorial pb-20">

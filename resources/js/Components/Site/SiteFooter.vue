@@ -45,6 +45,7 @@ const { t } = useI18n();
                     <li><Link :href="route('home')" class="hover:text-white">{{ t('footer_home') }}</Link></li>
                     <li><Link :href="route('events.index')" class="hover:text-white">{{ t('events_nav') }}</Link></li>
                     <li><Link :href="route('community.index')" class="hover:text-white">{{ t('community_nav') }}</Link></li>
+                    <li><Link :href="route('shop.index')" class="hover:text-white">{{ t('shop_nav') }}</Link></li>
                     <li><Link :href="route('brands.index')" class="hover:text-white">{{ t('brands_nav') }}</Link></li>
                     <li><Link :href="route('vehicles.compare')" class="hover:text-white">{{ t('compare_nav') }}</Link></li>
                     <li><Link :href="route('credit.simulate')" class="hover:text-white">{{ t('credit_nav') }}</Link></li>

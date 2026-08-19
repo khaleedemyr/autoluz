@@ -18,6 +18,10 @@ defineProps({
                 { label: 'Published', value: stats.published },
                 { label: 'Kategori', value: stats.categories },
                 { label: 'Video Channel', value: stats.videos },
+                { label: 'Produk Toko', value: stats.products ?? 0 },
+                { label: 'Pesanan pending', value: stats.orders_pending ?? 0 },
+                { label: 'Pesanan dibayar', value: stats.orders_paid ?? 0 },
+                { label: 'Omzet toko', value: 'Rp ' + Number(stats.shop_revenue || 0).toLocaleString('id-ID') },
             ]" :key="card.label" class="rounded-2xl border border-black/5 bg-white p-5 shadow-sm">
                 <p class="text-xs font-semibold uppercase tracking-[0.16em] text-neutral-400">{{ card.label }}</p>
                 <p class="mt-2 font-display text-4xl tracking-[-0.04em]">{{ card.value }}</p>
@@ -38,10 +42,16 @@ defineProps({
                 Kelola Kategori
             </Link>
             <Link
-                :href="route('admin.videos.index')"
+                :href="route('admin.products.create')"
                 class="rounded-full border border-black/10 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em]"
             >
-                Video YouTube
+                + Produk Toko
+            </Link>
+            <Link
+                :href="route('admin.orders.index')"
+                class="rounded-full border border-black/10 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em]"
+            >
+                Pesanan Toko
             </Link>
         </div>
 

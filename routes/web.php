@@ -13,6 +13,10 @@ use App\Http\Controllers\Admin\SeoController as AdminSeoController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\VideoController as AdminVideoController;
 use App\Http\Controllers\Admin\VehicleController as AdminVehicleController;
+use App\Http\Controllers\Admin\ProductController as AdminProductController;
+use App\Http\Controllers\Admin\ShopCategoryController as AdminShopCategoryController;
+use App\Http\Controllers\Admin\OrderController as AdminOrderController;
+use App\Http\Controllers\Admin\ShopSettingController as AdminShopSettingController;
 use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\ArticleShareController;
 use App\Http\Controllers\BrandController;
@@ -33,6 +37,11 @@ use App\Http\Controllers\NewsletterController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\SearchController;
+use App\Http\Controllers\ShopController;
+use App\Http\Controllers\ShopOrderController;
+use App\Http\Controllers\CartController;
+use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\MidtransNotificationController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\CreditSimulationController;
 use App\Http\Controllers\VehicleController;
@@ -80,6 +89,40 @@ Route::get('/simulasi-kredit', [CreditSimulationController::class, 'index'])->na
 Route::get('/galeri', [GalleryController::class, 'index'])->name('galleries.index');
 Route::get('/galeri/{slug}', [GalleryController::class, 'show'])->name('galleries.show');
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
+
+Route::get('/toko', [ShopController::class, 'index'])->name('shop.index');
+Route::get('/toko/keranjang', [CartController::class, 'show'])->name('shop.cart');
+Route::post('/toko/keranjang', [CartController::class, 'store'])
+    ->middleware('throttle:40,1')
+    ->name('shop.cart.store');
+Route::patch('/toko/keranjang/{item}', [CartController::class, 'update'])
+    ->middleware('throttle:60,1')
+    ->name('shop.cart.update');
+Route::delete('/toko/keranjang/{item}', [CartController::class, 'destroy'])
+    ->middleware('throttle:60,1')
+    ->name('shop.cart.destroy');
+Route::post('/toko/midtrans/notification', [MidtransNotificationController::class, 'store'])
+    ->name('shop.midtrans.notification');
+
+Route::middleware('auth')->group(function () {
+    Route::get('/toko/checkout', [CheckoutController::class, 'show'])->name('shop.checkout');
+    Route::get('/toko/checkout/kota', [CheckoutController::class, 'cities'])
+        ->middleware('throttle:60,1')
+        ->name('shop.checkout.cities');
+    Route::post('/toko/checkout/ongkir', [CheckoutController::class, 'quote'])
+        ->middleware('throttle:30,1')
+        ->name('shop.checkout.quote');
+    Route::post('/toko/checkout', [CheckoutController::class, 'store'])
+        ->middleware('throttle:10,1')
+        ->name('shop.checkout.store');
+    Route::get('/toko/pesanan', [ShopOrderController::class, 'index'])->name('shop.orders.index');
+    Route::get('/toko/pesanan/{order:number}', [ShopOrderController::class, 'show'])->name('shop.orders.show');
+    Route::post('/toko/pesanan/{order:number}/bayar', [ShopOrderController::class, 'pay'])
+        ->middleware('throttle:20,1')
+        ->name('shop.orders.pay');
+});
+
+Route::get('/toko/{product:slug}', [ShopController::class, 'show'])->name('shop.show');
 
 Route::get('/komunitas', [CommunityController::class, 'index'])->name('community.index');
 Route::get('/komunitas/p/{post}', [CommunityController::class, 'show'])->name('community.show');
@@ -247,6 +290,27 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/vehicles/{vehicle}/edit', [AdminVehicleController::class, 'edit'])->name('vehicles.edit');
     Route::put('/vehicles/{vehicle}', [AdminVehicleController::class, 'update'])->name('vehicles.update');
     Route::delete('/vehicles/{vehicle}', [AdminVehicleController::class, 'destroy'])->name('vehicles.destroy');
+
+    Route::get('/products', [AdminProductController::class, 'index'])->name('products.index');
+    Route::get('/products/create', [AdminProductController::class, 'create'])->name('products.create');
+    Route::post('/products', [AdminProductController::class, 'store'])->name('products.store');
+    Route::post('/products/upload-image', [AdminProductController::class, 'uploadImage'])->name('products.upload-image');
+    Route::get('/products/{product}/edit', [AdminProductController::class, 'edit'])->name('products.edit');
+    Route::put('/products/{product}', [AdminProductController::class, 'update'])->name('products.update');
+    Route::delete('/products/{product}', [AdminProductController::class, 'destroy'])->name('products.destroy');
+
+    Route::get('/shop-categories', [AdminShopCategoryController::class, 'index'])->name('shop-categories.index');
+    Route::post('/shop-categories', [AdminShopCategoryController::class, 'store'])->name('shop-categories.store');
+    Route::put('/shop-categories/{shop_category}', [AdminShopCategoryController::class, 'update'])->name('shop-categories.update');
+    Route::delete('/shop-categories/{shop_category}', [AdminShopCategoryController::class, 'destroy'])->name('shop-categories.destroy');
+
+    Route::get('/orders', [AdminOrderController::class, 'index'])->name('orders.index');
+    Route::get('/orders/{order}', [AdminOrderController::class, 'show'])->name('orders.show');
+    Route::put('/orders/{order}', [AdminOrderController::class, 'update'])->name('orders.update');
+
+    Route::get('/shop-settings', [AdminShopSettingController::class, 'edit'])->name('shop-settings.edit');
+    Route::get('/shop-settings/cities', [AdminShopSettingController::class, 'cities'])->name('shop-settings.cities');
+    Route::put('/shop-settings', [AdminShopSettingController::class, 'update'])->name('shop-settings.update');
 
     Route::get('/galleries', [AdminGalleryController::class, 'index'])->name('galleries.index');
     Route::get('/galleries/create', [AdminGalleryController::class, 'create'])->name('galleries.create');

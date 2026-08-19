@@ -3,6 +3,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { Link, router, usePage } from '@inertiajs/vue3';
 import MegaMenu from '@/Components/Site/MegaMenu.vue';
 import CommunityNotificationBell from '@/Components/Community/CommunityNotificationBell.vue';
+import CartIcon from '@/Components/Site/CartIcon.vue';
 import { useI18n } from '@/composables/useI18n';
 
 const page = usePage();
@@ -160,6 +161,15 @@ onUnmounted(() => {
                         {{ t('community_nav') }}
                     </Link>
 
+                    <Link
+                        :href="route('shop.index')"
+                        class="shrink-0 rounded-full px-2 py-2 text-[10px] font-semibold uppercase tracking-[0.1em] text-white/70 transition hover:bg-white/5 hover:text-white xl:px-2.5 xl:text-[11px] xl:tracking-[0.12em]"
+                        :class="{ 'bg-white/10 text-white': page.url.startsWith('/toko') && !megaOpen }"
+                        @mouseenter="closeMega"
+                    >
+                        {{ t('shop_nav') }}
+                    </Link>
+
                     <button
                         v-for="item in items"
                         :key="item.key"
@@ -264,6 +274,13 @@ onUnmounted(() => {
                                     {{ t('community_profile') }}
                                 </Link>
                                 <Link
+                                    :href="route('shop.orders.index')"
+                                    class="block px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] hover:bg-mist"
+                                    @click="closeAccount"
+                                >
+                                    {{ t('shop_orders') }}
+                                </Link>
+                                <Link
                                     v-if="authUser.is_admin"
                                     :href="route('admin.dashboard')"
                                     class="block px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-brand hover:bg-mist"
@@ -332,6 +349,8 @@ onUnmounted(() => {
                             {{ t('community_register') }}
                         </Link>
                     </template>
+
+                    <CartIcon />
 
                     <button
                         type="button"
@@ -433,6 +452,13 @@ onUnmounted(() => {
                                     {{ t('credit_nav') }}
                                 </Link>
                                 <Link
+                                    :href="route('shop.index')"
+                                    class="rounded-full border border-charcoal/15 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] transition hover:border-brand hover:text-brand"
+                                    @click="closeMega"
+                                >
+                                    {{ t('shop_nav') }}
+                                </Link>
+                                <Link
                                     :href="route('galleries.index')"
                                     class="rounded-full border border-charcoal/15 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] transition hover:border-brand hover:text-brand"
                                     @click="closeMega"
@@ -512,7 +538,28 @@ onUnmounted(() => {
                 >
                     {{ t('community_nav') }}
                 </Link>
+                <Link
+                    :href="route('shop.index')"
+                    class="rounded-lg px-2 py-3 text-sm font-semibold uppercase tracking-[0.14em] text-white/85"
+                    @click="mobileOpen = false"
+                >
+                    {{ t('shop_nav') }}
+                </Link>
+                <Link
+                    :href="route('shop.cart')"
+                    class="rounded-lg px-2 py-3 text-sm font-semibold uppercase tracking-[0.14em] text-white/85"
+                    @click="mobileOpen = false"
+                >
+                    {{ t('shop_cart') }}
+                </Link>
                 <template v-if="authUser">
+                    <Link
+                        :href="route('shop.orders.index')"
+                        class="rounded-lg px-2 py-3 text-sm font-semibold uppercase tracking-[0.14em] text-white/85"
+                        @click="mobileOpen = false"
+                    >
+                        {{ t('shop_orders') }}
+                    </Link>
                     <Link
                         :href="route('community.notifications')"
                         class="rounded-lg px-2 py-3 text-sm font-semibold uppercase tracking-[0.14em] text-white/85"

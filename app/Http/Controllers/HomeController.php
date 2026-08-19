@@ -7,10 +7,12 @@ use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Event;
 use App\Models\Gallery;
+use App\Models\Product;
 use App\Support\YoutubeFeed;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Schema;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -19,14 +21,14 @@ class HomeController extends Controller
     public function index(): Response
     {
         // Plain PHP arrays only — never cache Eloquent/Support collections.
-        $payload = Cache::remember('autoluz.home.page.v4', 120, fn () => $this->buildPayload());
+        $payload = Cache::remember('autoluz.home.page.v5', 120, fn () => $this->buildPayload());
 
         // If a bad/empty cache slipped in, rebuild once.
         if (! is_array($payload) || (empty($payload['featured']['main']) && empty($payload['popular']))) {
-            Cache::forget('autoluz.home.page.v4');
+            Cache::forget('autoluz.home.page.v5');
             $payload = $this->buildPayload();
             if (! empty($payload['featured']['main']) || ! empty($payload['popular'])) {
-                Cache::put('autoluz.home.page.v4', $payload, 120);
+                Cache::put('autoluz.home.page.v5', $payload, 120);
             }
         }
 
@@ -166,6 +168,20 @@ class HomeController extends Controller
             ->values()
             ->all();
 
+        $shopProducts = [];
+        if (Schema::hasTable('products')) {
+            $shopProducts = Product::query()
+                ->published()
+                ->with(['category', 'variants', 'images'])
+                ->orderByDesc('featured')
+                ->orderByDesc('published_at')
+                ->limit(4)
+                ->get()
+                ->map->toCardArray()
+                ->values()
+                ->all();
+        }
+
         return [
             'videos' => $videos,
             'videosMeta' => [
@@ -193,6 +209,7 @@ class HomeController extends Controller
                 'motos' => $motos,
             ],
             'recentGalleries' => $recentGalleries,
+            'shopProducts' => $shopProducts,
         ];
     }
 

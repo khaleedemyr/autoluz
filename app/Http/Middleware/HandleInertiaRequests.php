@@ -83,6 +83,20 @@ class HandleInertiaRequests extends Middleware
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
             ],
+            'cart' => function () use ($request) {
+                try {
+                    return app(\App\Services\CartService::class)
+                        ->summaryForRequest($request->user(), $request);
+                } catch (\Throwable) {
+                    return [
+                        'count' => 0,
+                        'subtotal' => 0,
+                        'subtotal_label' => 'Rp 0',
+                        'weight_grams' => 0,
+                        'items' => [],
+                    ];
+                }
+            },
         ];
     }
 }

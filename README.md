@@ -73,7 +73,28 @@ Imports categories then articles with upsert on legacy WordPress IDs.
 | `/berita/{slug}` | Article detail |
 | `/kategori/{slug}` | Category listing |
 | `/cari?q=` | Search |
+| `/toko` | Online shop |
+| `/toko/{slug}` | Product detail |
+| `/toko/keranjang` | Cart |
+| `/toko/checkout` | Checkout (login required) |
+| `/toko/pesanan` | Visitor order dashboard |
 | `/sitemap.xml` | Sitemap |
+
+## Shop (Midtrans + RajaOngkir)
+
+Set in `.env`:
+
+```
+MIDTRANS_SERVER_KEY=
+MIDTRANS_CLIENT_KEY=
+MIDTRANS_IS_PRODUCTION=false
+RAJAONGKIR_API_KEY=
+RAJAONGKIR_BASE_URL=https://rajaongkir.komerce.id/api/v1
+```
+
+Admin: Produk, Kategori Toko, Pesanan, Pengaturan Toko (kota asal + kurir).
+
+Midtrans Payment Notification URL: `https://autoluz.id/toko/midtrans/notification`
 
 ## Content Sources
 
@@ -123,6 +144,5 @@ git pull origin main
 php artisan migrate --force
 php artisan optimize:clear
 php artisan optimize
-
 rm -rf ~/domains/autoluz.id/public_html/build
 cp -a ~/domains/autoluz.id/app/public/build ~/domains/autoluz.id/public_html/build

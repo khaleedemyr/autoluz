@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\CartService;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -55,7 +56,9 @@ class RegisteredUserController extends Controller
 
         event(new Registered($user));
 
+        $guestSessionId = $request->session()->getId();
         Auth::login($user);
+        app(CartService::class)->mergeGuestCartIntoUser($user, $guestSessionId);
 
         return redirect()->intended(route('community.index', absolute: false));
     }

@@ -104,6 +104,21 @@ class User extends Authenticatable
         return $this->hasMany(CommunityNotification::class);
     }
 
+    public function cart(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(Cart::class);
+    }
+
+    public function addresses(): HasMany
+    {
+        return $this->hasMany(UserAddress::class);
+    }
+
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class);
+    }
+
     public function following(): BelongsToMany
     {
         return $this->belongsToMany(self::class, 'community_follows', 'follower_id', 'following_id')

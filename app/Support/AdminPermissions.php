@@ -11,6 +11,8 @@ class AdminPermissions
         'galleries' => 'Galeri',
         'brands' => 'Merek',
         'vehicles' => 'Kendaraan',
+        'products' => 'Produk Toko',
+        'orders' => 'Pesanan Toko',
         'newsletter' => 'Newsletter',
         'categories' => 'Kategori',
         'comments' => 'Komentar',
@@ -47,6 +49,13 @@ class AdminPermissions
 
         if ($name === 'admin.seo.generate' || str_starts_with($name, 'admin.articles.')) {
             return 'articles';
+        }
+
+        if (
+            str_starts_with($name, 'admin.shop-categories.')
+            || str_starts_with($name, 'admin.shop-settings.')
+        ) {
+            return 'products';
         }
 
         foreach (self::keys() as $key) {
