@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\ShopSetting;
+use App\Models\Store;
 use App\Services\RajaOngkirService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -33,11 +34,32 @@ class ShopSettingController extends Controller
             $error = $e->getMessage();
         }
 
+        $stores = Store::query()
+            ->with('owner:id,name,email')
+            ->orderByDesc('is_official')
+            ->orderBy('name')
+            ->get()
+            ->map(fn (Store $store) => [
+                'id' => $store->id,
+                'name' => $store->name,
+                'slug' => $store->slug,
+                'is_official' => $store->is_official,
+                'origin_city_name' => $store->origin_city_name,
+                'origin_ready' => $store->originReady(),
+                'couriers' => $store->courierList(),
+                'status_label' => $store->statusLabel(),
+                'owner' => $store->owner ? [
+                    'name' => $store->owner->name,
+                    'email' => $store->owner->email,
+                ] : null,
+            ]);
+
         return Inertia::render('Admin/ShopSettings/Edit', [
             'settings' => $settings->toAdminArray(),
+            'stores' => $stores,
             'provinces' => $provinces,
             'cities' => $cities,
-            'courierOptions' => \App\Models\Store::courierOptions(),
+            'courierOptions' => Store::courierOptions(),
             'rajaongkir_error' => $error,
             'rajaongkir_configured' => $rajaongkir->configured(),
             'midtrans_configured' => filled(config('shop.midtrans.server_key')),

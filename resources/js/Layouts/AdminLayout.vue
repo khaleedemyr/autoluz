@@ -48,7 +48,7 @@ const navGroups = [
             { label: 'Toko Partner', route: 'admin.stores.index', match: 'admin.stores.*', permission: 'stores' },
             { label: 'Kategori Toko', route: 'admin.shop-categories.index', match: 'admin.shop-categories.*', permission: 'products' },
             { label: 'Pesanan', route: 'admin.orders.index', match: 'admin.orders.*', permission: 'orders' },
-            { label: 'Pengaturan Toko', route: 'admin.shop-settings.edit', match: 'admin.shop-settings.*', permission: 'products' },
+            { label: 'Asal Pengiriman', route: 'admin.shop-settings.edit', match: 'admin.shop-settings.*', permission: 'products' },
         ],
     },
     {
