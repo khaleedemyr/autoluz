@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -20,6 +21,7 @@ class DatabaseSeeder extends Seeder
                 'name' => 'Autoluz Admin',
                 'password' => Hash::make('password'),
                 'is_admin' => true,
+                'role_id' => Role::super()?->id,
                 'email_verified_at' => now(),
             ]
         );

@@ -117,3 +117,12 @@ sync tiap pull
 
 rm -rf ~/domains/autoluz.id/public_html/build
 cp -a ~/domains/autoluz.id/app/public/build ~/domains/autoluz.id/public_html/build
+
+cd ~/domains/autoluz.id/app
+git pull origin main
+php artisan migrate --force
+php artisan optimize:clear
+php artisan optimize
+
+rm -rf ~/domains/autoluz.id/public_html/build
+cp -a ~/domains/autoluz.id/app/public/build ~/domains/autoluz.id/public_html/build

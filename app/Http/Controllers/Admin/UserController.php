@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -17,6 +18,7 @@ class UserController extends Controller
     public function index(): Response
     {
         $users = User::query()
+            ->with('role')
             ->orderByDesc('is_admin')
             ->orderBy('name')
             ->get()
@@ -24,12 +26,20 @@ class UserController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
-                'is_admin' => (bool) $user->is_admin,
+                'is_admin' => $user->canAccessAdmin(),
+                'role_id' => $user->role_id,
+                'role_name' => $user->role?->name,
                 'created_at' => optional($user->created_at)?->format('Y-m-d H:i'),
             ]);
 
+        $roles = Role::query()
+            ->orderByDesc('is_super')
+            ->orderBy('name')
+            ->get(['id', 'name', 'is_super']);
+
         return Inertia::render('Admin/Users/Index', [
             'users' => $users,
+            'roles' => $roles,
         ]);
     }
 
@@ -39,14 +49,15 @@ class UserController extends Controller
             'name' => ['required', 'string', 'max:120'],
             'email' => ['required', 'email', 'max:160', 'unique:users,email'],
             'password' => ['required', 'confirmed', Password::defaults()],
-            'is_admin' => ['boolean'],
+            'role_id' => ['nullable', 'integer', 'exists:roles,id'],
         ]);
 
         User::query()->create([
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
-            'is_admin' => (bool) ($data['is_admin'] ?? false),
+            'role_id' => $data['role_id'] ?? null,
+            'is_admin' => ! empty($data['role_id']),
             'email_verified_at' => now(),
         ]);
 
@@ -59,19 +70,26 @@ class UserController extends Controller
             'name' => ['required', 'string', 'max:120'],
             'email' => ['required', 'email', 'max:160', Rule::unique('users', 'email')->ignore($user->id)],
             'password' => ['nullable', 'confirmed', Password::defaults()],
-            'is_admin' => ['boolean'],
+            'role_id' => ['nullable', 'integer', 'exists:roles,id'],
         ]);
 
-        $isAdmin = (bool) ($data['is_admin'] ?? false);
+        $nextRoleId = $data['role_id'] ?? null;
+        $nextRole = $nextRoleId ? Role::query()->find($nextRoleId) : null;
+        $willBeStaff = (bool) $nextRoleId;
+        $willBeSuper = (bool) ($nextRole?->is_super);
 
-        // Prevent demoting/removing the last admin.
-        if ($user->is_admin && ! $isAdmin && $this->adminCount() <= 1) {
-            return back()->withErrors(['is_admin' => 'Minimal harus ada 1 admin.']);
+        if ($user->canAccessAdmin() && ! $willBeStaff && $this->staffCount() <= 1) {
+            return back()->withErrors(['role_id' => 'Minimal harus ada 1 akun admin.']);
+        }
+
+        if ($user->isSuperAdmin() && ! $willBeSuper && $this->superCount() <= 1) {
+            return back()->withErrors(['role_id' => 'Minimal harus ada 1 Super Admin.']);
         }
 
         $user->name = $data['name'];
         $user->email = $data['email'];
-        $user->is_admin = $isAdmin;
+        $user->role_id = $nextRoleId;
+        $user->is_admin = $willBeStaff;
 
         if (! empty($data['password'])) {
             $user->password = Hash::make($data['password']);
@@ -88,8 +106,12 @@ class UserController extends Controller
             return back()->withErrors(['user' => 'Tidak bisa menghapus akun sendiri.']);
         }
 
-        if ($user->is_admin && $this->adminCount() <= 1) {
+        if ($user->canAccessAdmin() && $this->staffCount() <= 1) {
             return back()->withErrors(['user' => 'Tidak bisa menghapus admin terakhir.']);
+        }
+
+        if ($user->isSuperAdmin() && $this->superCount() <= 1) {
+            return back()->withErrors(['user' => 'Tidak bisa menghapus Super Admin terakhir.']);
         }
 
         $user->delete();
@@ -97,8 +119,22 @@ class UserController extends Controller
         return back()->with('success', 'User dihapus.');
     }
 
-    protected function adminCount(): int
+    protected function staffCount(): int
     {
-        return User::query()->where('is_admin', true)->count();
+        return User::query()->where(function ($query) {
+            $query->where('is_admin', true)->orWhereNotNull('role_id');
+        })->count();
+    }
+
+    protected function superCount(): int
+    {
+        return User::query()
+            ->where(function ($query) {
+                $query->whereHas('role', fn ($role) => $role->where('is_super', true))
+                    ->orWhere(function ($inner) {
+                        $inner->where('is_admin', true)->whereNull('role_id');
+                    });
+            })
+            ->count();
     }
 }

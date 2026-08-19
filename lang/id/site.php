@@ -251,6 +251,7 @@ return [
     'community_register' => 'Daftar',
     'community_logout' => 'Keluar',
     'community_profile' => 'Profil',
+    'admin_panel' => 'Masuk Admin',
     'community_settings' => 'Pengaturan',
     'community_posts_count' => ':count postingan',
     'community_add_photo' => 'Foto',

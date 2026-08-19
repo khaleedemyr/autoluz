@@ -6,13 +6,14 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
 
-#[Fillable(['name', 'username', 'email', 'password', 'is_admin', 'bio', 'avatar_path'])]
+#[Fillable(['name', 'username', 'email', 'password', 'is_admin', 'role_id', 'bio', 'avatar_path'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -30,6 +31,55 @@ class User extends Authenticatable
     }
 
     public const ONLINE_THRESHOLD_SECONDS = 120;
+
+    public function role(): BelongsTo
+    {
+        return $this->belongsTo(Role::class);
+    }
+
+    public function canAccessAdmin(): bool
+    {
+        return (bool) $this->is_admin || (bool) $this->role_id;
+    }
+
+    public function isSuperAdmin(): bool
+    {
+        if ($this->role?->is_super) {
+            return true;
+        }
+
+        return (bool) $this->is_admin && ! $this->role_id;
+    }
+
+    public function hasAdminPermission(string $key): bool
+    {
+        if (! $this->canAccessAdmin()) {
+            return false;
+        }
+
+        if ($key === 'dashboard' || $this->isSuperAdmin()) {
+            return true;
+        }
+
+        return $this->role?->hasPermission($key) ?? false;
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function adminPermissionKeys(): array
+    {
+        if ($this->isSuperAdmin()) {
+            return ['*'];
+        }
+
+        $keys = array_values($this->role?->permissions ?? []);
+        if (! in_array('dashboard', $keys, true)) {
+            array_unshift($keys, 'dashboard');
+        }
+
+        return $keys;
+    }
 
     public function communityPosts(): HasMany
     {

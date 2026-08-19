@@ -251,6 +251,7 @@ return [
     'community_register' => 'Sign up',
     'community_logout' => 'Log out',
     'community_profile' => 'Profile',
+    'admin_panel' => 'Admin Panel',
     'community_settings' => 'Settings',
     'community_posts_count' => ':count posts',
     'community_add_photo' => 'Photo',

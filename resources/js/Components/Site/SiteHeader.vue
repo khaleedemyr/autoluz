@@ -264,6 +264,14 @@ onUnmounted(() => {
                                     {{ t('community_profile') }}
                                 </Link>
                                 <Link
+                                    v-if="authUser.is_admin"
+                                    :href="route('admin.dashboard')"
+                                    class="block px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-brand hover:bg-mist"
+                                    @click="closeAccount"
+                                >
+                                    {{ t('admin_panel') }}
+                                </Link>
+                                <Link
                                     :href="route('community.settings')"
                                     class="block px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] hover:bg-mist"
                                     @click="closeAccount"
@@ -545,6 +553,14 @@ onUnmounted(() => {
                         @click="mobileOpen = false"
                     >
                         {{ authUser.name }}
+                    </Link>
+                    <Link
+                        v-if="authUser.is_admin"
+                        :href="route('admin.dashboard')"
+                        class="rounded-lg px-2 py-3 text-sm font-semibold uppercase tracking-[0.14em] text-brand"
+                        @click="mobileOpen = false"
+                    >
+                        {{ t('admin_panel') }}
                     </Link>
                     <Link
                         :href="route('logout')"

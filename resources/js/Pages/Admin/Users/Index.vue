@@ -6,6 +6,7 @@ import { swalConfirm, swalWarning } from '@/utils/swal';
 
 const props = defineProps({
     users: { type: Array, default: () => [] },
+    roles: { type: Array, default: () => [] },
 });
 
 const page = usePage();
@@ -18,7 +19,7 @@ const createForm = useForm({
     email: '',
     password: '',
     password_confirmation: '',
-    is_admin: true,
+    role_id: '',
 });
 
 const editForm = reactive({
@@ -26,7 +27,7 @@ const editForm = reactive({
     email: '',
     password: '',
     password_confirmation: '',
-    is_admin: false,
+    role_id: '',
     processing: false,
     errors: {},
 });
@@ -34,7 +35,7 @@ const editForm = reactive({
 function openCreate() {
     showCreate.value = true;
     createForm.reset();
-    createForm.is_admin = true;
+    createForm.role_id = props.roles.find((role) => role.is_super)?.id || '';
     createForm.clearErrors();
 }
 
@@ -44,7 +45,7 @@ function startEdit(user) {
     editForm.email = user.email;
     editForm.password = '';
     editForm.password_confirmation = '';
-    editForm.is_admin = !!user.is_admin;
+    editForm.role_id = user.role_id || '';
     editForm.errors = {};
 }
 
@@ -54,13 +55,15 @@ function cancelEdit() {
 }
 
 function submitCreate() {
-    createForm.post(route('admin.users.store'), {
-        preserveScroll: true,
-        onSuccess: () => {
-            showCreate.value = false;
-            createForm.reset();
-        },
-    });
+    createForm
+        .transform((data) => ({ ...data, role_id: data.role_id || null }))
+        .post(route('admin.users.store'), {
+            preserveScroll: true,
+            onSuccess: () => {
+                showCreate.value = false;
+                createForm.reset();
+            },
+        });
 }
 
 function submitEdit(user) {
@@ -74,7 +77,7 @@ function submitEdit(user) {
             email: editForm.email,
             password: editForm.password || null,
             password_confirmation: editForm.password_confirmation || null,
-            is_admin: editForm.is_admin,
+            role_id: editForm.role_id || null,
         },
         {
             preserveScroll: true,
@@ -110,7 +113,7 @@ async function destroyUser(user) {
         <Head title="User Management" />
 
         <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
-            <p class="text-sm text-neutral-500">Kelola akun admin dan akses portal.</p>
+            <p class="text-sm text-neutral-500">Kelola akun dan tetapkan role untuk akses menu admin.</p>
             <button
                 type="button"
                 class="rounded-full bg-brand px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-white"
@@ -145,10 +148,14 @@ async function destroyUser(user) {
                     <label class="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-neutral-500">Konfirmasi</label>
                     <input v-model="createForm.password_confirmation" type="password" class="w-full rounded-xl border-black/10" required />
                 </div>
-                <label class="flex items-center gap-2 text-sm sm:col-span-2">
-                    <input v-model="createForm.is_admin" type="checkbox" class="rounded border-black/20 text-brand" />
-                    Beri akses admin
-                </label>
+                <div class="sm:col-span-2">
+                    <label class="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-neutral-500">Role</label>
+                    <select v-model="createForm.role_id" class="w-full rounded-xl border-black/10">
+                        <option value="">Tanpa akses admin</option>
+                        <option v-for="role in roles" :key="role.id" :value="role.id">{{ role.name }}</option>
+                    </select>
+                    <p v-if="createForm.errors.role_id" class="mt-1 text-xs text-red-600">{{ createForm.errors.role_id }}</p>
+                </div>
                 <div class="flex gap-2 sm:col-span-2">
                     <button
                         type="submit"
@@ -202,11 +209,14 @@ async function destroyUser(user) {
                                     <label class="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-neutral-500">Konfirmasi</label>
                                     <input v-model="editForm.password_confirmation" type="password" class="w-full rounded-xl border-black/10" />
                                 </div>
-                                <label class="flex items-center gap-2 text-sm sm:col-span-2">
-                                    <input v-model="editForm.is_admin" type="checkbox" class="rounded border-black/20 text-brand" />
-                                    Akses admin
-                                </label>
-                                <p v-if="editForm.errors.is_admin" class="text-xs text-red-600 sm:col-span-2">{{ editForm.errors.is_admin }}</p>
+                                <div class="sm:col-span-2">
+                                    <label class="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-neutral-500">Role</label>
+                                    <select v-model="editForm.role_id" class="w-full rounded-xl border-black/10">
+                                        <option value="">Tanpa akses admin</option>
+                                        <option v-for="role in roles" :key="role.id" :value="role.id">{{ role.name }}</option>
+                                    </select>
+                                    <p v-if="editForm.errors.role_id" class="text-xs text-red-600">{{ editForm.errors.role_id }}</p>
+                                </div>
                                 <div class="flex gap-2 sm:col-span-2">
                                     <button
                                         type="submit"
@@ -234,9 +244,9 @@ async function destroyUser(user) {
                             <td class="px-4 py-3">
                                 <span
                                     class="rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em]"
-                                    :class="user.is_admin ? 'bg-brand/10 text-brand' : 'bg-neutral-100 text-neutral-500'"
+                                    :class="user.role_name ? 'bg-brand/10 text-brand' : 'bg-neutral-100 text-neutral-500'"
                                 >
-                                    {{ user.is_admin ? 'Admin' : 'User' }}
+                                    {{ user.role_name || 'User' }}
                                 </span>
                             </td>
                             <td class="px-4 py-3 text-neutral-500">{{ user.created_at }}</td>

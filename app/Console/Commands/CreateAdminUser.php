@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Hash;
@@ -27,6 +28,7 @@ class CreateAdminUser extends Command
                 'name' => $name,
                 'password' => Hash::make($password),
                 'is_admin' => true,
+                'role_id' => Role::super()?->id,
                 'email_verified_at' => now(),
             ]
         );

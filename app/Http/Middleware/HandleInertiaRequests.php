@@ -27,7 +27,9 @@ class HandleInertiaRequests extends Middleware
                     'email' => $request->user()->email,
                     'bio' => $request->user()->bio,
                     'avatar_url' => $request->user()->avatarUrl(),
-                    'is_admin' => (bool) $request->user()->is_admin,
+                    'is_admin' => $request->user()->canAccessAdmin(),
+                    'permissions' => $request->user()->loadMissing('role')->adminPermissionKeys(),
+                    'role_name' => $request->user()->role?->name,
                     'unread_notifications' => $request->user()->communityNotifications()
                         ->whereNull('read_at')
                         ->count(),

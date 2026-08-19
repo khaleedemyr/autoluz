@@ -11,18 +11,23 @@ const mobileOpen = ref(false);
 const user = computed(() => page.props.auth?.user);
 
 const nav = [
-    { label: 'Dashboard', route: 'admin.dashboard', match: 'admin.dashboard' },
-    { label: 'Artikel', route: 'admin.articles.index', match: 'admin.articles.*' },
-    { label: 'Event', route: 'admin.events.index', match: 'admin.events.*' },
-    { label: 'Galeri', route: 'admin.galleries.index', match: 'admin.galleries.*' },
-    { label: 'Merek', route: 'admin.brands.index', match: 'admin.brands.*' },
-    { label: 'Kendaraan', route: 'admin.vehicles.index', match: 'admin.vehicles.*' },
-    { label: 'Newsletter', route: 'admin.newsletter.index', match: 'admin.newsletter.*' },
-    { label: 'Kategori', route: 'admin.categories.index', match: 'admin.categories.*' },
-    { label: 'Komentar', route: 'admin.comments.index', match: 'admin.comments.*' },
-    { label: 'Video', route: 'admin.videos.index', match: 'admin.videos.*' },
-    { label: 'Users', route: 'admin.users.index', match: 'admin.users.*' },
+    { label: 'Dashboard', route: 'admin.dashboard', match: 'admin.dashboard', permission: 'dashboard' },
+    { label: 'Artikel', route: 'admin.articles.index', match: 'admin.articles.*', permission: 'articles' },
+    { label: 'Event', route: 'admin.events.index', match: 'admin.events.*', permission: 'events' },
+    { label: 'Galeri', route: 'admin.galleries.index', match: 'admin.galleries.*', permission: 'galleries' },
+    { label: 'Merek', route: 'admin.brands.index', match: 'admin.brands.*', permission: 'brands' },
+    { label: 'Kendaraan', route: 'admin.vehicles.index', match: 'admin.vehicles.*', permission: 'vehicles' },
+    { label: 'Newsletter', route: 'admin.newsletter.index', match: 'admin.newsletter.*', permission: 'newsletter' },
+    { label: 'Kategori', route: 'admin.categories.index', match: 'admin.categories.*', permission: 'categories' },
+    { label: 'Komentar', route: 'admin.comments.index', match: 'admin.comments.*', permission: 'comments' },
+    { label: 'Video', route: 'admin.videos.index', match: 'admin.videos.*', permission: 'videos' },
+    { label: 'Users', route: 'admin.users.index', match: 'admin.users.*', permission: 'users' },
+    { label: 'Role', route: 'admin.roles.index', match: 'admin.roles.*', permission: 'roles' },
 ];
+
+const permissions = computed(() => page.props.auth?.user?.permissions || []);
+const canSee = (key) => permissions.value.includes('*') || permissions.value.includes(key);
+const visibleNav = computed(() => nav.filter((item) => canSee(item.permission)));
 
 function isActive(pattern) {
     return route().current(pattern);
@@ -43,7 +48,7 @@ function logout() {
                 </div>
                 <nav class="flex-1 space-y-1 p-3">
                     <Link
-                        v-for="item in nav"
+                        v-for="item in visibleNav"
                         :key="item.route"
                         :href="route(item.route)"
                         class="block rounded-xl px-3 py-2.5 text-sm font-semibold transition"
@@ -86,7 +91,7 @@ function logout() {
 
                 <div v-if="mobileOpen" class="border-b border-black/5 bg-white p-3 lg:hidden">
                     <Link
-                        v-for="item in nav"
+                        v-for="item in visibleNav"
                         :key="item.route"
                         :href="route(item.route)"
                         class="block rounded-lg px-3 py-2 text-sm font-semibold"

@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\EventController as AdminEventController;
 use App\Http\Controllers\Admin\GalleryController as AdminGalleryController;
 use App\Http\Controllers\Admin\NewsletterSubscriberController as AdminNewsletterSubscriberController;
+use App\Http\Controllers\Admin\RoleController as AdminRoleController;
 use App\Http\Controllers\Admin\SeoController as AdminSeoController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\VideoController as AdminVideoController;
@@ -180,7 +181,7 @@ Route::get('/komunitas/u/{username}', [CommunityController::class, 'profile'])
     ->name('community.profile');
 
 Route::get('/dashboard', function () {
-    if (auth()->user()?->is_admin) {
+    if (auth()->user()?->canAccessAdmin()) {
         return redirect()->route('admin.dashboard');
     }
 
@@ -216,6 +217,11 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/users', [AdminUserController::class, 'store'])->name('users.store');
     Route::put('/users/{user}', [AdminUserController::class, 'update'])->name('users.update');
     Route::delete('/users/{user}', [AdminUserController::class, 'destroy'])->name('users.destroy');
+
+    Route::get('/roles', [AdminRoleController::class, 'index'])->name('roles.index');
+    Route::post('/roles', [AdminRoleController::class, 'store'])->name('roles.store');
+    Route::put('/roles/{role}', [AdminRoleController::class, 'update'])->name('roles.update');
+    Route::delete('/roles/{role}', [AdminRoleController::class, 'destroy'])->name('roles.destroy');
 
     Route::get('/comments', [AdminCommentController::class, 'index'])->name('comments.index');
     Route::patch('/comments/{comment}/toggle', [AdminCommentController::class, 'toggle'])->name('comments.toggle');
