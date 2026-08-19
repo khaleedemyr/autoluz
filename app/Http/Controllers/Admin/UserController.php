@@ -33,9 +33,10 @@ class UserController extends Controller
             ]);
 
         $roles = Role::query()
+            ->orderByRaw("CASE type WHEN 'admin' THEN 0 ELSE 1 END")
             ->orderByDesc('is_super')
             ->orderBy('name')
-            ->get(['id', 'name', 'is_super']);
+            ->get(['id', 'name', 'type', 'is_super', 'is_default']);
 
         return Inertia::render('Admin/Users/Index', [
             'users' => $users,
@@ -52,12 +53,16 @@ class UserController extends Controller
             'role_id' => ['nullable', 'integer', 'exists:roles,id'],
         ]);
 
+        $role = ! empty($data['role_id'])
+            ? Role::query()->find($data['role_id'])
+            : Role::visitor();
+
         User::query()->create([
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
-            'role_id' => $data['role_id'] ?? null,
-            'is_admin' => ! empty($data['role_id']),
+            'role_id' => $role?->id,
+            'is_admin' => (bool) $role?->grantsAdminAccess(),
             'email_verified_at' => now(),
         ]);
 
@@ -74,8 +79,9 @@ class UserController extends Controller
         ]);
 
         $nextRoleId = $data['role_id'] ?? null;
-        $nextRole = $nextRoleId ? Role::query()->find($nextRoleId) : null;
-        $willBeStaff = (bool) $nextRoleId;
+        $nextRole = $nextRoleId ? Role::query()->find($nextRoleId) : Role::visitor();
+        $nextRoleId = $nextRole?->id;
+        $willBeStaff = (bool) $nextRole?->grantsAdminAccess();
         $willBeSuper = (bool) ($nextRole?->is_super);
 
         if ($user->canAccessAdmin() && ! $willBeStaff && $this->staffCount() <= 1) {
@@ -121,9 +127,12 @@ class UserController extends Controller
 
     protected function staffCount(): int
     {
-        return User::query()->where(function ($query) {
-            $query->where('is_admin', true)->orWhereNotNull('role_id');
-        })->count();
+        return User::query()
+            ->where(function ($query) {
+                $query->where('is_admin', true)
+                    ->orWhereHas('role', fn ($role) => $role->where('is_super', true)->orWhere('type', Role::TYPE_ADMIN));
+            })
+            ->count();
     }
 
     protected function superCount(): int

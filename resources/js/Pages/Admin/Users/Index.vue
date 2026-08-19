@@ -13,6 +13,8 @@ const page = usePage();
 const currentUserId = computed(() => page.props.auth?.user?.id);
 const editingId = ref(null);
 const showCreate = ref(false);
+const adminRoles = computed(() => props.roles.filter((role) => role.type !== 'visitor'));
+const visitorRoles = computed(() => props.roles.filter((role) => role.type === 'visitor'));
 
 const createForm = useForm({
     name: '',
@@ -35,7 +37,9 @@ const editForm = reactive({
 function openCreate() {
     showCreate.value = true;
     createForm.reset();
-    createForm.role_id = props.roles.find((role) => role.is_super)?.id || '';
+    createForm.role_id = props.roles.find((role) => role.is_default)?.id
+        || props.roles.find((role) => role.type === 'visitor')?.id
+        || '';
     createForm.clearErrors();
 }
 
@@ -151,8 +155,12 @@ async function destroyUser(user) {
                 <div class="sm:col-span-2">
                     <label class="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-neutral-500">Role</label>
                     <select v-model="createForm.role_id" class="w-full rounded-xl border-black/10">
-                        <option value="">Tanpa akses admin</option>
-                        <option v-for="role in roles" :key="role.id" :value="role.id">{{ role.name }}</option>
+                        <optgroup v-if="adminRoles.length" label="Admin">
+                            <option v-for="role in adminRoles" :key="role.id" :value="role.id">{{ role.name }}</option>
+                        </optgroup>
+                        <optgroup v-if="visitorRoles.length" label="Pengunjung">
+                            <option v-for="role in visitorRoles" :key="role.id" :value="role.id">{{ role.name }}</option>
+                        </optgroup>
                     </select>
                     <p v-if="createForm.errors.role_id" class="mt-1 text-xs text-red-600">{{ createForm.errors.role_id }}</p>
                 </div>
@@ -212,8 +220,12 @@ async function destroyUser(user) {
                                 <div class="sm:col-span-2">
                                     <label class="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-neutral-500">Role</label>
                                     <select v-model="editForm.role_id" class="w-full rounded-xl border-black/10">
-                                        <option value="">Tanpa akses admin</option>
-                                        <option v-for="role in roles" :key="role.id" :value="role.id">{{ role.name }}</option>
+                                        <optgroup v-if="adminRoles.length" label="Admin">
+                                            <option v-for="role in adminRoles" :key="role.id" :value="role.id">{{ role.name }}</option>
+                                        </optgroup>
+                                        <optgroup v-if="visitorRoles.length" label="Pengunjung">
+                                            <option v-for="role in visitorRoles" :key="role.id" :value="role.id">{{ role.name }}</option>
+                                        </optgroup>
                                     </select>
                                     <p v-if="editForm.errors.role_id" class="text-xs text-red-600">{{ editForm.errors.role_id }}</p>
                                 </div>
@@ -244,9 +256,9 @@ async function destroyUser(user) {
                             <td class="px-4 py-3">
                                 <span
                                     class="rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em]"
-                                    :class="user.role_name ? 'bg-brand/10 text-brand' : 'bg-neutral-100 text-neutral-500'"
+                                    :class="user.is_admin ? 'bg-brand/10 text-brand' : 'bg-neutral-100 text-neutral-500'"
                                 >
-                                    {{ user.role_name || 'User' }}
+                                    {{ user.role_name || 'Pengunjung' }}
                                 </span>
                             </td>
                             <td class="px-4 py-3 text-neutral-500">{{ user.created_at }}</td>

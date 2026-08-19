@@ -16,18 +16,27 @@ const showCreate = ref(false);
 
 const createForm = useForm({
     name: '',
-    permissions: ['dashboard'],
+    type: 'visitor',
+    is_default: true,
+    permissions: [],
 });
 
 const editForm = reactive({
     name: '',
+    type: 'admin',
+    is_default: false,
     permissions: [],
     processing: false,
     errors: {},
 });
 
 function permissionLabels(role) {
-    if (role.is_super) return 'Semua menu';
+    if (role.is_super) return 'Semua menu admin';
+    if (role.type === 'visitor') {
+        return role.is_default
+            ? 'Pengunjung website — role default saat daftar'
+            : 'Pengunjung website — tidak bisa masuk admin';
+    }
     return (role.permissions || [])
         .map((key) => props.permissionCatalog.find((item) => item.key === key)?.label || key)
         .join(', ');
@@ -51,6 +60,8 @@ function togglePermission(list, key) {
 function openCreate() {
     showCreate.value = true;
     createForm.reset();
+    createForm.type = 'visitor';
+    createForm.is_default = false;
     createForm.permissions = ['dashboard'];
     createForm.clearErrors();
 }
@@ -58,6 +69,8 @@ function openCreate() {
 function startEdit(role) {
     editingId.value = role.id;
     editForm.name = role.name;
+    editForm.type = role.type || 'admin';
+    editForm.is_default = !!role.is_default;
     editForm.permissions = [...(role.permissions || [])];
     editForm.errors = {};
 }
@@ -85,7 +98,9 @@ function submitEdit(role) {
         route('admin.roles.update', role.id),
         {
             name: editForm.name,
-            permissions: role.is_super ? undefined : editForm.permissions,
+            type: role.is_super ? 'admin' : editForm.type,
+            is_default: editForm.is_default,
+            permissions: role.is_super || editForm.type === 'visitor' ? undefined : editForm.permissions,
         },
         {
             preserveScroll: true,
@@ -107,6 +122,10 @@ async function destroyRole(role) {
         await swalWarning('Role Super Admin tidak bisa dihapus.');
         return;
     }
+    if (role.is_default) {
+        await swalWarning('Role default pendaftaran tidak bisa dihapus.');
+        return;
+    }
     const ok = await swalConfirm(`Hapus role "${role.name}"?`, {
         title: 'Hapus Role',
         confirmButtonText: 'Hapus',
@@ -121,7 +140,7 @@ async function destroyRole(role) {
         <Head title="Role" />
 
         <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
-            <p class="text-sm text-neutral-500">Buat role dan pilih menu admin yang boleh diakses.</p>
+            <p class="text-sm text-neutral-500">Buat role admin (akses menu) atau role pengunjung (user website).</p>
             <button
                 type="button"
                 class="rounded-full bg-brand px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-white"
@@ -138,10 +157,24 @@ async function destroyRole(role) {
             <form class="space-y-4" @submit.prevent="submitCreate">
                 <div>
                     <label class="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-neutral-500">Nama role</label>
-                    <input v-model="createForm.name" type="text" class="w-full max-w-md rounded-xl border-black/10" required placeholder="Contoh: Editor Event" />
+                    <input v-model="createForm.name" type="text" class="w-full max-w-md rounded-xl border-black/10" required placeholder="Contoh: Pengunjung atau Editor Event" />
                     <p v-if="createForm.errors.name" class="mt-1 text-xs text-red-600">{{ createForm.errors.name }}</p>
                 </div>
                 <div>
+                    <label class="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-neutral-500">Tipe</label>
+                    <select v-model="createForm.type" class="w-full max-w-md rounded-xl border-black/10">
+                        <option value="visitor">Pengunjung (website)</option>
+                        <option value="admin">Admin (portal)</option>
+                    </select>
+                </div>
+                <p v-if="createForm.type === 'visitor'" class="text-sm text-neutral-500">
+                    Role ini untuk user website. Tidak bisa masuk portal admin.
+                </p>
+                <label v-if="createForm.type === 'visitor'" class="flex items-center gap-2 text-sm">
+                    <input v-model="createForm.is_default" type="checkbox" class="rounded border-black/20 text-brand" />
+                    Role default saat user daftar
+                </label>
+                <div v-if="createForm.type === 'admin'">
                     <p class="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-neutral-500">Akses menu</p>
                     <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                         <label
@@ -194,6 +227,17 @@ async function destroyRole(role) {
                         <p v-if="editForm.errors.name" class="mt-1 text-xs text-red-600">{{ editForm.errors.name }}</p>
                     </div>
                     <div v-if="!role.is_super">
+                        <label class="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-neutral-500">Tipe</label>
+                        <select v-model="editForm.type" class="w-full max-w-md rounded-xl border-black/10">
+                            <option value="visitor">Pengunjung (website)</option>
+                            <option value="admin">Admin (portal)</option>
+                        </select>
+                    </div>
+                    <label v-if="!role.is_super && editForm.type === 'visitor'" class="flex items-center gap-2 text-sm">
+                        <input v-model="editForm.is_default" type="checkbox" class="rounded border-black/20 text-brand" />
+                        Role default saat user daftar
+                    </label>
+                    <div v-if="!role.is_super && editForm.type === 'admin'">
                         <p class="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-neutral-500">Akses menu</p>
                         <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                             <label
@@ -213,7 +257,10 @@ async function destroyRole(role) {
                             </label>
                         </div>
                     </div>
-                    <p v-else class="text-sm text-neutral-500">Super Admin punya akses ke semua menu.</p>
+                    <p v-if="role.is_super" class="text-sm text-neutral-500">Super Admin punya akses ke semua menu.</p>
+                    <p v-else-if="editForm.type === 'visitor'" class="text-sm text-neutral-500">
+                        Role pengunjung untuk user website, tanpa akses portal admin.
+                    </p>
                     <div class="flex gap-2">
                         <button
                             type="submit"
@@ -242,6 +289,19 @@ async function destroyRole(role) {
                             >
                                 Super
                             </span>
+                            <span
+                                v-else
+                                class="rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em]"
+                                :class="role.type === 'visitor' ? 'bg-neutral-100 text-neutral-600' : 'bg-brand/10 text-brand'"
+                            >
+                                {{ role.type === 'visitor' ? 'Pengunjung' : 'Admin' }}
+                            </span>
+                            <span
+                                v-if="role.is_default"
+                                class="rounded-full bg-mist px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-neutral-500"
+                            >
+                                Default daftar
+                            </span>
                             <span class="text-xs text-neutral-400">{{ role.users_count }} user</span>
                         </div>
                         <p class="mt-2 text-sm text-neutral-600">{{ permissionLabels(role) }}</p>
@@ -255,7 +315,7 @@ async function destroyRole(role) {
                             Edit
                         </button>
                         <button
-                            v-if="!role.is_super"
+                            v-if="!role.is_super && !role.is_default"
                             type="button"
                             class="text-xs font-semibold uppercase tracking-[0.12em] text-red-600 hover:text-red-700"
                             @click="destroyRole(role)"

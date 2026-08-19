@@ -17,6 +17,7 @@ class RoleController extends Controller
     {
         $roles = Role::query()
             ->withCount('users')
+            ->orderByRaw("CASE type WHEN 'admin' THEN 0 ELSE 1 END")
             ->orderByDesc('is_super')
             ->orderBy('name')
             ->get()
@@ -33,12 +34,22 @@ class RoleController extends Controller
     {
         $data = $this->validated($request);
 
-        Role::query()->create([
+        $role = new Role([
             'name' => $data['name'],
             'slug' => Role::uniqueSlug($data['name']),
+            'type' => $data['type'],
             'is_super' => false,
-            'permissions' => $this->normalizedPermissions($data['permissions'] ?? []),
+            'is_default' => $data['type'] === Role::TYPE_VISITOR && ($data['is_default'] ?? false),
+            'permissions' => $data['type'] === Role::TYPE_ADMIN
+                ? $this->normalizedPermissions($data['permissions'] ?? [])
+                : [],
         ]);
+
+        if ($role->is_default) {
+            Role::query()->where('type', Role::TYPE_VISITOR)->update(['is_default' => false]);
+        }
+
+        $role->save();
 
         return back()->with('success', 'Role ditambahkan.');
     }
@@ -51,10 +62,25 @@ class RoleController extends Controller
         $role->slug = Role::uniqueSlug($data['name'], $role->id);
 
         if (! $role->is_super) {
-            $role->permissions = $this->normalizedPermissions($data['permissions'] ?? []);
+            $role->type = $data['type'];
+            $role->permissions = $role->type === Role::TYPE_ADMIN
+                ? $this->normalizedPermissions($data['permissions'] ?? [])
+                : [];
+            $role->is_default = $role->type === Role::TYPE_VISITOR && ($data['is_default'] ?? false);
+        }
+
+        if ($role->is_default) {
+            Role::query()
+                ->where('type', Role::TYPE_VISITOR)
+                ->where('id', '!=', $role->id)
+                ->update(['is_default' => false]);
         }
 
         $role->save();
+
+        $role->users()->update([
+            'is_admin' => $role->grantsAdminAccess(),
+        ]);
 
         return back()->with('success', 'Role disimpan.');
     }
@@ -63,6 +89,10 @@ class RoleController extends Controller
     {
         if ($role->is_super) {
             return back()->withErrors(['role' => 'Role Super Admin tidak bisa dihapus.']);
+        }
+
+        if ($role->is_default) {
+            return back()->withErrors(['role' => 'Role default pendaftaran tidak bisa dihapus.']);
         }
 
         if ($role->users()->exists()) {
@@ -78,6 +108,8 @@ class RoleController extends Controller
     {
         return $request->validate([
             'name' => ['required', 'string', 'max:80', Rule::unique('roles', 'name')->ignore($role?->id)],
+            'type' => ['required', Rule::in([Role::TYPE_ADMIN, Role::TYPE_VISITOR])],
+            'is_default' => ['boolean'],
             'permissions' => ['nullable', 'array'],
             'permissions.*' => ['string', Rule::in(AdminPermissions::keys())],
         ]);

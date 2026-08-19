@@ -39,7 +39,11 @@ class User extends Authenticatable
 
     public function canAccessAdmin(): bool
     {
-        return (bool) $this->is_admin || (bool) $this->role_id;
+        if ($this->role?->grantsAdminAccess()) {
+            return true;
+        }
+
+        return (bool) $this->is_admin && ! $this->role_id;
     }
 
     public function isSuperAdmin(): bool
@@ -69,6 +73,10 @@ class User extends Authenticatable
      */
     public function adminPermissionKeys(): array
     {
+        if (! $this->canAccessAdmin()) {
+            return [];
+        }
+
         if ($this->isSuperAdmin()) {
             return ['*'];
         }
