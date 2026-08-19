@@ -13,50 +13,13 @@ class ShopController extends Controller
 {
     public function index(Request $request): Response
     {
-        $q = trim((string) $request->query('q', ''));
-        $category = trim((string) $request->query('kategori', ''));
-        $storeSlug = trim((string) $request->query('toko', ''));
-        $sort = (string) $request->query('sort', 'newest');
-        $min = $request->query('min');
-        $max = $request->query('max');
-
-        $products = Product::query()
-            ->published()
-            ->with(['category', 'variants', 'images', 'store'])
-            ->when($q !== '', function ($query) use ($q) {
-                $like = '%'.str_replace(['%', '_'], ['\\%', '\\_'], $q).'%';
-                $query->where(function ($inner) use ($like) {
-                    $inner->where('name', 'like', $like)->orWhere('excerpt', 'like', $like);
-                });
-            })
-            ->when($category !== '', function ($query) use ($category) {
-                $query->whereHas('category', fn ($inner) => $inner->where('slug', $category));
-            })
-            ->when($storeSlug !== '', function ($query) use ($storeSlug) {
-                $query->whereHas('store', fn ($inner) => $inner->where('slug', $storeSlug));
-            })
-            ->when(is_numeric($min), fn ($query) => $query->whereHas('variants', fn ($inner) => $inner->where('price', '>=', (int) $min)))
-            ->when(is_numeric($max), fn ($query) => $query->whereHas('variants', fn ($inner) => $inner->where('price', '<=', (int) $max)))
-            ->when($sort === 'price_asc', fn ($query) => $query->withMin('variants', 'price')->orderBy('variants_min_price'))
-            ->when($sort === 'price_desc', fn ($query) => $query->withMin('variants', 'price')->orderByDesc('variants_min_price'))
-            ->when($sort === 'name', fn ($query) => $query->orderBy('name'))
-            ->when($sort === 'newest' || ! in_array($sort, ['price_asc', 'price_desc', 'name'], true), fn ($query) => $query->orderByDesc('published_at')->orderByDesc('id'))
-            ->paginate(12)
-            ->withQueryString()
-            ->through(fn (Product $product) => $product->toCardArray());
+        [$products, $filters] = $this->catalog($request);
 
         return Inertia::render('Shop/Index', [
             'products' => $products,
-            'categories' => ShopCategory::query()->active()->orderBy('sort_order')->orderBy('name')->get()->map->toNavArray()->values()->all(),
+            'categories' => $this->categoryOptions(),
             'stores' => Store::query()->approved()->orderByDesc('is_official')->orderBy('name')->get()->map->toCardArray()->values()->all(),
-            'filters' => [
-                'q' => $q,
-                'kategori' => $category,
-                'toko' => $storeSlug,
-                'sort' => $sort,
-                'min' => is_numeric($min) ? (int) $min : '',
-                'max' => is_numeric($max) ? (int) $max : '',
-            ],
+            'filters' => $filters,
         ]);
     }
 
@@ -64,19 +27,26 @@ class ShopController extends Controller
     {
         abort_unless($store->isApproved(), 404);
 
-        $products = Product::query()
+        [$products, $filters] = $this->catalog($request, $store->id);
+
+        $cover = Product::query()
             ->published()
             ->where('store_id', $store->id)
-            ->with(['category', 'variants', 'images', 'store'])
+            ->whereNotNull('cover_image_url')
+            ->where('cover_image_url', '!=', '')
             ->orderByDesc('published_at')
             ->orderByDesc('id')
-            ->paginate(12)
-            ->withQueryString()
-            ->through(fn (Product $product) => $product->toCardArray());
+            ->first();
 
         return Inertia::render('Shop/Stores/Show', [
-            'store' => $store->toPublicArray(),
+            'store' => [
+                ...$store->toPublicArray(),
+                'products_count' => Product::query()->published()->where('store_id', $store->id)->count(),
+                'cover_url' => $cover?->coverUrl(),
+            ],
             'products' => $products,
+            'categories' => $this->categoryOptions($store->id),
+            'filters' => $filters,
         ]);
     }
 
@@ -107,5 +77,74 @@ class ShopController extends Controller
             'product' => $product->toDetailArray(),
             'related' => $related,
         ]);
+    }
+
+    /**
+     * @return array{0: \Illuminate\Pagination\LengthAwarePaginator, 1: array<string, mixed>}
+     */
+    private function catalog(Request $request, ?int $storeId = null): array
+    {
+        $q = trim((string) $request->query('q', ''));
+        $category = trim((string) $request->query('kategori', ''));
+        $storeSlug = $storeId ? '' : trim((string) $request->query('toko', ''));
+        $sort = (string) $request->query('sort', 'newest');
+        $min = $request->query('min');
+        $max = $request->query('max');
+
+        $products = Product::query()
+            ->published()
+            ->with(['category', 'variants', 'images', 'store'])
+            ->when($storeId, fn ($query) => $query->where('store_id', $storeId))
+            ->when($q !== '', function ($query) use ($q) {
+                $like = '%'.str_replace(['%', '_'], ['\\%', '\\_'], $q).'%';
+                $query->where(function ($inner) use ($like) {
+                    $inner->where('name', 'like', $like)->orWhere('excerpt', 'like', $like);
+                });
+            })
+            ->when($category !== '', function ($query) use ($category) {
+                $query->whereHas('category', fn ($inner) => $inner->where('slug', $category));
+            })
+            ->when($storeSlug !== '', function ($query) use ($storeSlug) {
+                $query->whereHas('store', fn ($inner) => $inner->where('slug', $storeSlug));
+            })
+            ->when(is_numeric($min), fn ($query) => $query->whereHas('variants', fn ($inner) => $inner->where('price', '>=', (int) $min)))
+            ->when(is_numeric($max), fn ($query) => $query->whereHas('variants', fn ($inner) => $inner->where('price', '<=', (int) $max)))
+            ->when($sort === 'price_asc', fn ($query) => $query->withMin('variants', 'price')->orderBy('variants_min_price'))
+            ->when($sort === 'price_desc', fn ($query) => $query->withMin('variants', 'price')->orderByDesc('variants_min_price'))
+            ->when($sort === 'name', fn ($query) => $query->orderBy('name'))
+            ->when($sort === 'newest' || ! in_array($sort, ['price_asc', 'price_desc', 'name'], true), fn ($query) => $query->orderByDesc('published_at')->orderByDesc('id'))
+            ->paginate(16)
+            ->withQueryString()
+            ->through(fn (Product $product) => $product->toCardArray());
+
+        return [
+            $products,
+            [
+                'q' => $q,
+                'kategori' => $category,
+                'toko' => $storeSlug,
+                'sort' => in_array($sort, ['price_asc', 'price_desc', 'name'], true) ? $sort : 'newest',
+                'min' => is_numeric($min) ? (int) $min : '',
+                'max' => is_numeric($max) ? (int) $max : '',
+            ],
+        ];
+    }
+
+    /**
+     * @return list<array{id: int, name: string, slug: string}>
+     */
+    private function categoryOptions(?int $storeId = null): array
+    {
+        return ShopCategory::query()
+            ->active()
+            ->whereHas('products', function ($query) use ($storeId) {
+                $query->published()->when($storeId, fn ($inner) => $inner->where('store_id', $storeId));
+            })
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get()
+            ->map->toNavArray()
+            ->values()
+            ->all();
     }
 }

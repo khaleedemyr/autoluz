@@ -147,7 +147,7 @@ function addToCart() {
 
             <div v-if="related.length" class="mt-16">
                 <h2 class="font-display text-3xl tracking-[-0.04em]">{{ t('shop_related') }}</h2>
-                <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div class="mt-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 lg:gap-5">
                     <ProductCard v-for="item in related" :key="item.id" :product="item" />
                 </div>
             </div>

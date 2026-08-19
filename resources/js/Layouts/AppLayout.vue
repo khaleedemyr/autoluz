@@ -13,6 +13,7 @@ const footerCategories = computed(() => {
     return [...(nav.primary || []), ...(nav.more || [])].slice(0, 8);
 });
 const isAuth = computed(() => !!page.props.auth?.user);
+const pageKey = computed(() => String(page.url || '').split('?')[0]);
 </script>
 
 <template>
@@ -30,7 +31,7 @@ const isAuth = computed(() => !!page.props.auth?.user);
                 leave-to-class="opacity-0"
                 mode="out-in"
             >
-                <div :key="page.url" class="min-w-0">
+                <div :key="pageKey" class="min-w-0">
                     <slot />
                 </div>
             </Transition>

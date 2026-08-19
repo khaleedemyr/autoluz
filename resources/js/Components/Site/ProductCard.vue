@@ -1,45 +1,44 @@
 <script setup>
 import { Link } from '@inertiajs/vue3';
+import { useI18n } from '@/composables/useI18n';
 
 defineProps({
     product: { type: Object, required: true },
+    hideStore: { type: Boolean, default: false },
 });
+
+const { t } = useI18n();
 </script>
 
 <template>
     <Link
         :href="product.url || route('shop.show', product.slug)"
-        class="group flex h-full flex-col overflow-hidden rounded-[1.35rem] border border-[var(--line)] bg-white shadow-soft transition duration-500 ease-editorial hover:-translate-y-1 hover:border-brand/25 hover:shadow-lift"
+        class="group flex h-full flex-col overflow-hidden rounded-[1.15rem] bg-white ring-1 ring-black/[0.06] transition duration-300 hover:-translate-y-0.5 hover:ring-black/15 hover:shadow-[0_18px_40px_-24px_rgba(10,11,13,0.45)]"
     >
-        <div class="media-frame relative aspect-[4/5] overflow-hidden bg-neutral-100">
+        <div class="relative aspect-[3/4] overflow-hidden bg-[#111]">
             <img
                 v-if="product.cover_image_url"
                 :src="product.cover_image_url"
                 :alt="product.name"
-                class="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+                class="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
                 loading="lazy"
             />
-            <div v-else class="flex h-full items-center justify-center text-sm text-neutral-400">{{ product.name }}</div>
-            <span
-                v-if="product.category?.name"
-                class="absolute left-3 top-3 rounded-full bg-charcoal/85 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white"
-            >
-                {{ product.category.name }}
-            </span>
+            <div v-else class="flex h-full items-center justify-center px-4 text-center text-sm text-white/40">{{ product.name }}</div>
             <span
                 v-if="!product.in_stock"
-                class="absolute right-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-charcoal"
+                class="absolute right-2.5 top-2.5 rounded-full bg-white px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-charcoal"
             >
-                Sold out
+                {{ t('shop_out') }}
             </span>
         </div>
-        <div class="flex flex-1 flex-col p-4 sm:p-5">
-            <h3 class="font-display text-xl tracking-[-0.03em] text-charcoal transition group-hover:text-brand">{{ product.name }}</h3>
-            <p v-if="product.store?.name" class="mt-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-neutral-400">
-                {{ product.store.is_official ? 'Official · ' : '' }}{{ product.store.name }}
+        <div class="flex flex-1 flex-col px-3.5 py-3.5">
+            <p v-if="!hideStore && product.store?.name" class="truncate text-[11px] font-medium text-neutral-400">
+                {{ product.store.name }}
             </p>
-            <p v-if="product.excerpt" class="mt-2 line-clamp-2 text-sm text-neutral-500">{{ product.excerpt }}</p>
-            <p class="mt-auto pt-4 text-sm font-semibold text-charcoal">{{ product.price_label || '—' }}</p>
+            <h3 class="mt-0.5 line-clamp-2 min-h-[2.6em] text-[15px] font-semibold leading-snug tracking-[-0.02em] text-charcoal">
+                {{ product.name }}
+            </h3>
+            <p class="mt-auto pt-2.5 text-[15px] font-semibold tracking-[-0.02em] text-charcoal">{{ product.price_label || '—' }}</p>
         </div>
     </Link>
 </template>

@@ -26,7 +26,7 @@ const { t } = useI18n();
                 <span aria-hidden="true">→</span>
             </Link>
         </div>
-        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 lg:gap-5">
             <ProductCard v-for="product in products" :key="product.id" :product="product" />
         </div>
     </section>
