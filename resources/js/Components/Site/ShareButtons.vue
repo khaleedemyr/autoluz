@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { swalToast } from '@/utils/swal';
 import { useI18n } from '@/composables/useI18n';
 
@@ -7,22 +7,40 @@ const props = defineProps({
     slug: { type: String, required: true },
     url: { type: String, required: true },
     title: { type: String, required: true },
-    viewsCount: { type: Number, default: 0 },
+    viewsCount: { type: Number, default: null },
     sharesCount: { type: Number, default: 0 },
+    shareRoute: { type: String, default: 'articles.share' },
+    description: { type: String, default: '' },
+    copiedMessage: { type: String, default: '' },
+    compact: { type: Boolean, default: false },
+    dark: { type: Boolean, default: false },
+    showStats: { type: Boolean, default: true },
 });
 
 const { t, formatNumber } = useI18n();
 const copied = ref(false);
+const canNativeShare = ref(false);
 const localShares = ref(props.sharesCount);
+
+onMounted(() => {
+    canNativeShare.value = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
+});
 
 const encodedUrl = computed(() => encodeURIComponent(props.url));
 const encodedTitle = computed(() => encodeURIComponent(props.title));
+const descriptionText = computed(() => props.description || t('share_text'));
+const copiedText = computed(() => props.copiedMessage || t('link_copied'));
+const showViews = computed(() => props.showStats && props.viewsCount !== null);
+const showShares = computed(() => props.showStats);
 
-const formattedViews = computed(() => formatNumber(props.viewsCount));
+const formattedViews = computed(() => formatNumber(props.viewsCount || 0));
 const formattedShares = computed(() => formatNumber(localShares.value));
 
-const btnClass =
-    'inline-flex h-11 w-11 items-center justify-center rounded-full border border-black/10 bg-white text-charcoal transition hover:border-brand hover:bg-brand hover:text-white';
+const btnClass = computed(() =>
+    props.dark
+        ? 'inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition hover:border-brand hover:bg-brand'
+        : 'inline-flex h-11 w-11 items-center justify-center rounded-full border border-black/10 bg-white text-charcoal transition hover:border-brand hover:bg-brand hover:text-white',
+);
 
 const shares = computed(() => [
     {
@@ -48,8 +66,10 @@ const shares = computed(() => [
 ]);
 
 async function trackShare(channel) {
+    if (!props.shareRoute || !props.slug) return;
+
     try {
-        const { data } = await window.axios.post(route('articles.share', props.slug), { channel });
+        const { data } = await window.axios.post(route(props.shareRoute, props.slug), { channel });
         if (typeof data?.shares_count === 'number') {
             localShares.value = data.shares_count;
         } else {
@@ -65,12 +85,27 @@ async function copyLink() {
         await navigator.clipboard.writeText(props.url);
         copied.value = true;
         await trackShare('copy');
-        swalToast(t('link_copied'));
+        swalToast(copiedText.value);
         setTimeout(() => {
             copied.value = false;
         }, 2000);
     } catch {
         swalToast(t('link_copy_failed'), { icon: 'error' });
+    }
+}
+
+async function nativeShare() {
+    try {
+        await navigator.share({
+            title: props.title,
+            text: props.title,
+            url: props.url,
+        });
+        await trackShare('native');
+    } catch (error) {
+        if (error?.name !== 'AbortError') {
+            swalToast(t('link_copy_failed'), { icon: 'error' });
+        }
     }
 }
 
@@ -80,27 +115,59 @@ function onShareClick(item) {
 </script>
 
 <template>
-    <div class="rounded-2xl border border-[var(--line)] bg-white/80 p-5 shadow-soft">
-        <div class="flex flex-wrap items-end justify-between gap-4">
+    <div
+        :class="
+            compact
+                ? ''
+                : dark
+                  ? 'rounded-2xl border border-white/10 bg-white/5 p-5'
+                  : 'rounded-2xl border border-[var(--line)] bg-white/80 p-5 shadow-soft'
+        "
+    >
+        <div v-if="!compact" class="flex flex-wrap items-end justify-between gap-4">
             <div>
-                <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-400">{{ t('share_title') }}</p>
-                <p class="mt-1 text-sm text-neutral-600">{{ t('share_text') }}</p>
+                <p
+                    class="text-[11px] font-semibold uppercase tracking-[0.18em]"
+                    :class="dark ? 'text-white/40' : 'text-neutral-400'"
+                >
+                    {{ t('share_title') }}
+                </p>
+                <p class="mt-1 text-sm" :class="dark ? 'text-white/70' : 'text-neutral-600'">
+                    {{ descriptionText }}
+                </p>
             </div>
-            <div class="flex flex-wrap gap-4 text-sm text-neutral-600">
-                <div class="inline-flex items-center gap-2">
-                    <span class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-mist text-charcoal" aria-hidden="true">
+            <div
+                v-if="showViews || showShares"
+                class="flex flex-wrap gap-4 text-sm"
+                :class="dark ? 'text-white/70' : 'text-neutral-600'"
+            >
+                <div v-if="showViews" class="inline-flex items-center gap-2">
+                    <span
+                        class="inline-flex h-8 w-8 items-center justify-center rounded-full"
+                        :class="dark ? 'bg-white/10 text-white' : 'bg-mist text-charcoal'"
+                        aria-hidden="true"
+                    >
                         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                             <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
                             <circle cx="12" cy="12" r="3" />
                         </svg>
                     </span>
                     <div>
-                        <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-neutral-400">{{ t('views_label') }}</p>
+                        <p
+                            class="text-[10px] font-semibold uppercase tracking-[0.16em]"
+                            :class="dark ? 'text-white/40' : 'text-neutral-400'"
+                        >
+                            {{ t('views_label') }}
+                        </p>
                         <p class="font-semibold tracking-[-0.02em]">{{ formattedViews }}x</p>
                     </div>
                 </div>
-                <div class="inline-flex items-center gap-2">
-                    <span class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-mist text-charcoal" aria-hidden="true">
+                <div v-if="showShares" class="inline-flex items-center gap-2">
+                    <span
+                        class="inline-flex h-8 w-8 items-center justify-center rounded-full"
+                        :class="dark ? 'bg-white/10 text-white' : 'bg-mist text-charcoal'"
+                        aria-hidden="true"
+                    >
                         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                             <path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7" />
                             <path d="M16 6l-4-4-4 4" />
@@ -108,19 +175,46 @@ function onShareClick(item) {
                         </svg>
                     </span>
                     <div>
-                        <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-neutral-400">{{ t('shares_label') }}</p>
+                        <p
+                            class="text-[10px] font-semibold uppercase tracking-[0.16em]"
+                            :class="dark ? 'text-white/40' : 'text-neutral-400'"
+                        >
+                            {{ t('shares_label') }}
+                        </p>
                         <p class="font-semibold tracking-[-0.02em]">{{ formattedShares }}x</p>
                     </div>
                 </div>
             </div>
         </div>
+        <p
+            v-else
+            class="mb-3 text-[10px] font-semibold uppercase tracking-[0.16em]"
+            :class="dark ? 'text-white/40' : 'text-neutral-400'"
+        >
+            {{ t('share_title') }}
+        </p>
 
-        <div class="mt-5 flex flex-wrap gap-2.5">
+        <div :class="compact ? 'flex flex-wrap gap-2' : 'mt-5 flex flex-wrap gap-2.5'">
+            <button
+                v-if="canNativeShare"
+                type="button"
+                :class="btnClass"
+                :title="t('share_native')"
+                :aria-label="t('share_native')"
+                @click="nativeShare"
+            >
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true">
+                    <path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7" />
+                    <path d="M16 6l-4-4-4 4" />
+                    <path d="M12 2v13" />
+                </svg>
+            </button>
+
             <button
                 type="button"
                 :class="btnClass"
-                :title="copied ? t('link_copied') : t('copy_link')"
-                :aria-label="copied ? t('link_copied') : t('copy_link')"
+                :title="copied ? copiedText : t('copy_link')"
+                :aria-label="copied ? copiedText : t('copy_link')"
                 @click="copyLink"
             >
                 <svg v-if="!copied" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true">
@@ -140,7 +234,7 @@ function onShareClick(item) {
                 rel="noopener noreferrer"
                 :class="btnClass"
                 :title="item.label"
-                :aria-label="`Bag ke ${item.label}`"
+                :aria-label="`Bagikan ke ${item.label}`"
                 @click="onShareClick(item)"
             >
                 <svg v-if="item.key === 'whatsapp'" class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">

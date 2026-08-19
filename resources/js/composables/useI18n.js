@@ -28,6 +28,14 @@ export function useI18n() {
         }).format(new Date(value));
     }
 
+    function formatEventDate(value, options = {}) {
+        const next = { ...options, timeZone: 'Asia/Jakarta' };
+        if (options.hour && !options.hourCycle) {
+            next.hourCycle = 'h23';
+        }
+        return formatDate(value, next);
+    }
+
     function formatNumber(value) {
         return new Intl.NumberFormat(dateLocale.value).format(Number(value || 0));
     }
@@ -73,6 +81,7 @@ export function useI18n() {
         dateLocale,
         t,
         formatDate,
+        formatEventDate,
         formatNumber,
         setLocale,
         paginationLabel,

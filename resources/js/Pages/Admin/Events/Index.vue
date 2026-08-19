@@ -37,6 +37,8 @@ function formatDate(value) {
         year: 'numeric',
         hour: '2-digit',
         minute: '2-digit',
+        hourCycle: 'h23',
+        timeZone: 'Asia/Jakarta',
     }).format(new Date(value));
 }
 

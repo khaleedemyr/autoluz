@@ -120,6 +120,7 @@ function submit() {
                         <input v-model="form.ends_at" type="datetime-local" class="w-full rounded-xl border-black/10" />
                         <p v-if="form.errors.ends_at" class="mt-1 text-xs text-red-600">{{ form.errors.ends_at }}</p>
                     </div>
+                    <p class="sm:col-span-2 text-xs text-neutral-400">Waktu ditampilkan di frontend sebagai WIB (GMT+7), sesuai yang diisi di sini.</p>
                 </div>
 
                 <div class="grid gap-4 sm:grid-cols-3">

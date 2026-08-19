@@ -8,7 +8,7 @@ const props = defineProps({
     events: { type: Array, default: () => [] },
 });
 
-const { t, formatDate, locale } = useI18n();
+const { t, formatEventDate, locale } = useI18n();
 
 const nearestId = computed(() => {
     const upcoming = [...(props.events || [])]
@@ -18,10 +18,13 @@ const nearestId = computed(() => {
     return upcoming[0]?.id ?? props.events?.[0]?.id ?? null;
 });
 
+const eventTz = { timeZone: 'Asia/Jakarta' };
+
 function dayPart(value) {
     if (!value) return '';
     return new Intl.DateTimeFormat(locale.value === 'en' ? 'en-US' : 'id-ID', {
         day: '2-digit',
+        ...eventTz,
     }).format(new Date(value));
 }
 
@@ -29,6 +32,7 @@ function monthPart(value) {
     if (!value) return '';
     return new Intl.DateTimeFormat(locale.value === 'en' ? 'en-US' : 'id-ID', {
         month: 'short',
+        ...eventTz,
     }).format(new Date(value));
 }
 </script>
@@ -80,7 +84,7 @@ function monthPart(value) {
                     </div>
                     <div>
                         <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/55">
-                            {{ event.city || event.location || formatDate(event.starts_at) }}
+                            {{ event.city || event.location || formatEventDate(event.starts_at) }}
                         </p>
                         <h3
                             class="mt-2 font-display leading-[1.05] tracking-[-0.03em] transition group-hover:text-brand"

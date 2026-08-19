@@ -24,6 +24,7 @@ use App\Http\Controllers\CommunityLiveChatController;
 use App\Http\Controllers\CommunityMessageController;
 use App\Http\Controllers\CommunityNotificationController;
 use App\Http\Controllers\EventController;
+use App\Http\Controllers\EventShareController;
 use App\Http\Controllers\GalleryController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LocaleController;
@@ -54,6 +55,9 @@ Route::get('/kategori/{slug}', [CategoryController::class, 'show'])->name('categ
 Route::get('/cari', [SearchController::class, 'index'])->name('search');
 Route::get('/event', [EventController::class, 'index'])->name('events.index');
 Route::get('/event/{slug}', [EventController::class, 'show'])->name('events.show');
+Route::post('/event/{slug}/share', [EventShareController::class, 'store'])
+    ->middleware('throttle:30,1')
+    ->name('events.share');
 Route::post('/newsletter', [NewsletterController::class, 'store'])
     ->middleware('throttle:6,1')
     ->name('newsletter.store');

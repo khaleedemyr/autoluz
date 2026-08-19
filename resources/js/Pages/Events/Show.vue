@@ -1,19 +1,55 @@
 <script setup>
+import { computed } from 'vue';
 import { Head, Link } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import ShareButtons from '@/Components/Site/ShareButtons.vue';
 import { useI18n } from '@/composables/useI18n';
 
-defineProps({
+const props = defineProps({
     event: { type: Object, required: true },
     related: { type: Array, default: () => [] },
 });
 
-const { t, formatDate } = useI18n();
+const { t, formatEventDate } = useI18n();
+
+const shareUrl = computed(() => props.event.url || (typeof window !== 'undefined' ? window.location.href : ''));
+const pageDescription = computed(() => props.event.excerpt || props.event.title);
+
+const jsonLd = computed(() =>
+    JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'Event',
+        name: props.event.title,
+        description: pageDescription.value,
+        image: props.event.cover_image_url || undefined,
+        startDate: props.event.starts_at,
+        endDate: props.event.ends_at || undefined,
+        eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
+        location: {
+            '@type': 'Place',
+            name: props.event.venue || props.event.location || props.event.city || 'Autoluz',
+            address: [props.event.location, props.event.city].filter(Boolean).join(', ') || undefined,
+        },
+        url: shareUrl.value,
+    }),
+);
 </script>
 
 <template>
     <AppLayout>
-        <Head :title="event.title" />
+        <Head :title="event.title">
+            <meta name="description" :content="pageDescription" />
+            <link v-if="event.url" rel="canonical" :href="event.url" />
+            <meta property="og:type" content="website" />
+            <meta property="og:title" :content="event.title" />
+            <meta property="og:description" :content="pageDescription" />
+            <meta v-if="event.url" property="og:url" :content="event.url" />
+            <meta v-if="event.cover_image_url" property="og:image" :content="event.cover_image_url" />
+            <meta name="twitter:card" content="summary_large_image" />
+            <meta name="twitter:title" :content="event.title" />
+            <meta name="twitter:description" :content="pageDescription" />
+            <component :is="'script'" type="application/ld+json" v-html="jsonLd" />
+        </Head>
 
         <article>
             <section class="relative overflow-hidden bg-charcoal text-white">
@@ -65,11 +101,11 @@ const { t, formatDate } = useI18n();
                                 <div>
                                     <dt class="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/40">{{ t('events_when') }}</dt>
                                     <dd class="mt-1 font-semibold">
-                                        {{ formatDate(event.starts_at, { month: 'long', hour: '2-digit', minute: '2-digit' }) }}
+                                        {{ formatEventDate(event.starts_at, { month: 'long', hour: '2-digit', minute: '2-digit' }) }}
                                         <template v-if="event.ends_at">
                                             <br />
                                             <span class="font-normal text-white/55">
-                                                – {{ formatDate(event.ends_at, { month: 'long', hour: '2-digit', minute: '2-digit' }) }}
+                                                – {{ formatEventDate(event.ends_at, { month: 'long', hour: '2-digit', minute: '2-digit' }) }}
                                             </span>
                                         </template>
                                     </dd>
@@ -83,6 +119,20 @@ const { t, formatDate } = useI18n();
                                     </dd>
                                 </div>
                             </dl>
+                            <div class="mt-5 border-t border-white/10 pt-4">
+                                <ShareButtons
+                                    compact
+                                    dark
+                                    :slug="event.slug"
+                                    :url="shareUrl"
+                                    :title="event.title"
+                                    share-route="events.share"
+                                    :shares-count="event.shares_count || 0"
+                                    :show-stats="false"
+                                    :description="t('share_event_text')"
+                                    :copied-message="t('link_copied_event')"
+                                />
+                            </div>
                         </aside>
                     </div>
 
@@ -97,6 +147,20 @@ const { t, formatDate } = useI18n();
 
             <section v-if="event.body_html" class="container-editorial py-12">
                 <div class="prose-article mx-auto max-w-3xl" v-html="event.body_html" />
+            </section>
+
+            <section class="container-editorial" :class="event.body_html ? 'pb-12' : 'py-12'">
+                <div class="mx-auto max-w-3xl">
+                    <ShareButtons
+                        :slug="event.slug"
+                        :url="shareUrl"
+                        :title="event.title"
+                        share-route="events.share"
+                        :shares-count="event.shares_count || 0"
+                        :description="t('share_event_text')"
+                        :copied-message="t('link_copied_event')"
+                    />
+                </div>
             </section>
         </article>
 
@@ -121,7 +185,7 @@ const { t, formatDate } = useI18n();
                     </div>
                     <div class="p-4">
                         <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-neutral-400">
-                            {{ formatDate(item.starts_at) }}
+                            {{ formatEventDate(item.starts_at) }}
                         </p>
                         <h3 class="mt-1 line-clamp-2 font-semibold group-hover:text-brand">{{ item.title }}</h3>
                     </div>

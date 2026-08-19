@@ -10,16 +10,18 @@ defineProps({
     hero: { type: Object, default: null },
 });
 
-const { t, formatDate, locale } = useI18n();
+const { t, formatEventDate, locale } = useI18n();
+
+const eventTz = { timeZone: 'Asia/Jakarta' };
 
 function dayPart(value) {
     if (!value) return '';
-    return new Intl.DateTimeFormat(locale.value === 'en' ? 'en-US' : 'id-ID', { day: '2-digit' }).format(new Date(value));
+    return new Intl.DateTimeFormat(locale.value === 'en' ? 'en-US' : 'id-ID', { day: '2-digit', ...eventTz }).format(new Date(value));
 }
 
 function monthPart(value) {
     if (!value) return '';
-    return new Intl.DateTimeFormat(locale.value === 'en' ? 'en-US' : 'id-ID', { month: 'short' }).format(new Date(value));
+    return new Intl.DateTimeFormat(locale.value === 'en' ? 'en-US' : 'id-ID', { month: 'short', ...eventTz }).format(new Date(value));
 }
 
 function timePart(value) {
@@ -27,6 +29,8 @@ function timePart(value) {
     return new Intl.DateTimeFormat(locale.value === 'en' ? 'en-US' : 'id-ID', {
         hour: '2-digit',
         minute: '2-digit',
+        hourCycle: 'h23',
+        ...eventTz,
     }).format(new Date(value));
 }
 </script>
@@ -82,7 +86,7 @@ function timePart(value) {
                         <div class="mt-8 space-y-5">
                             <EventCountdown v-if="hero.starts_at" :target="hero.starts_at" />
                             <div class="flex flex-wrap gap-6 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/50">
-                                <span>{{ formatDate(hero.starts_at, { month: 'long', hour: '2-digit', minute: '2-digit' }) }}</span>
+                                <span>{{ formatEventDate(hero.starts_at, { month: 'long', hour: '2-digit', minute: '2-digit' }) }}</span>
                                 <span v-if="hero.city || hero.location">{{ hero.city || hero.location }}</span>
                             </div>
                         </div>
@@ -154,7 +158,7 @@ function timePart(value) {
                         </div>
                         <div class="p-4">
                             <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-neutral-400">
-                                {{ formatDate(event.starts_at) }}
+                                {{ formatEventDate(event.starts_at) }}
                             </p>
                             <h3 class="mt-1 line-clamp-2 text-sm font-semibold leading-snug group-hover:text-brand">
                                 {{ event.title }}

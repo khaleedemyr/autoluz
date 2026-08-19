@@ -43,7 +43,7 @@ class EventController extends Controller
         $related = Event::query()
             ->published()
             ->where('id', '!=', $event->id)
-            ->orderByRaw('CASE WHEN starts_at >= ? THEN 0 ELSE 1 END', [now()->startOfDay()])
+            ->orderByRaw('CASE WHEN starts_at >= ? THEN 0 ELSE 1 END', [Event::localDayStart()])
             ->orderBy('starts_at')
             ->limit(3)
             ->get()
