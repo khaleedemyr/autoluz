@@ -35,6 +35,9 @@ defineProps({
         </div>
         <div class="flex flex-1 flex-col p-4 sm:p-5">
             <h3 class="font-display text-xl tracking-[-0.03em] text-charcoal transition group-hover:text-brand">{{ product.name }}</h3>
+            <p v-if="product.store?.name" class="mt-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-neutral-400">
+                {{ product.store.is_official ? 'Official · ' : '' }}{{ product.store.name }}
+            </p>
             <p v-if="product.excerpt" class="mt-2 line-clamp-2 text-sm text-neutral-500">{{ product.excerpt }}</p>
             <p class="mt-auto pt-4 text-sm font-semibold text-charcoal">{{ product.price_label || '—' }}</p>
         </div>

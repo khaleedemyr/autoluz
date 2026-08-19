@@ -54,18 +54,19 @@ class RajaOngkirService
     }
 
     /**
+     * @param  list<string>|null  $couriers
      * @return list<array{courier: string, service: string, description: string, cost: int, etd: string, label: string}>
      */
-    public function costs(string $destinationCityId, int $weightGrams, ?array $couriers = null): array
+    public function costs(string $destinationCityId, int $weightGrams, ?array $couriers = null, ?string $originCityId = null): array
     {
         if (! $this->configured()) {
             throw new RuntimeException('RajaOngkir belum dikonfigurasi.');
         }
 
         $settings = ShopSetting::current();
-        $origin = $settings->origin_city_id;
+        $origin = $originCityId ?: $settings->origin_city_id;
         if (! $origin) {
-            throw new RuntimeException('Kota asal pengiriman belum diatur admin.');
+            throw new RuntimeException('Kota asal pengiriman belum diatur.');
         }
 
         $weight = max(1, $weightGrams);

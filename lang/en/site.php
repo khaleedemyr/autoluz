@@ -428,4 +428,12 @@ return [
     'shop_orders_empty' => 'No orders yet.',
     'shop_items' => 'Items',
     'shop_tracking' => 'Tracking',
+    'shop_official' => 'Official',
+    'shop_partner' => 'Partner store',
+    'shop_all_stores' => 'All stores',
+    'shop_unknown_store' => 'Store unavailable',
+    'shop_store_origin_missing' => 'One of the stores has not set a shipping origin. Remove those items or wait for the seller to complete settings.',
+    'shop_split_hint' => 'Shipping is quoted per store. You pay once for everything.',
+    'shop_parent_checkout' => 'Combined payment',
+    'shop_seller_dash' => 'Store dashboard',
 ];

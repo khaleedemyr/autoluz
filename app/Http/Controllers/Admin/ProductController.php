@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\ProductImage;
 use App\Models\ProductVariant;
 use App\Models\ShopCategory;
+use App\Models\Store;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -20,9 +21,10 @@ class ProductController extends Controller
     {
         $q = trim((string) $request->query('q', ''));
         $categoryId = (int) $request->query('shop_category_id', 0);
+        $storeId = (int) $request->query('store_id', 0);
 
         $products = Product::query()
-            ->with('category')
+            ->with(['category', 'store'])
             ->withCount('images')
             ->with(['variants' => fn ($query) => $query->orderBy('sort_order')])
             ->when($q !== '', function ($query) use ($q) {
@@ -32,6 +34,7 @@ class ProductController extends Controller
                 });
             })
             ->when($categoryId > 0, fn ($query) => $query->where('shop_category_id', $categoryId))
+            ->when($storeId > 0, fn ($query) => $query->where('store_id', $storeId))
             ->orderByDesc('updated_at')
             ->paginate(15)
             ->withQueryString()
@@ -45,9 +48,11 @@ class ProductController extends Controller
         return Inertia::render('Admin/Products/Index', [
             'products' => $products,
             'categories' => $this->categoryOptions(),
+            'stores' => $this->storeOptions(),
             'filters' => [
                 'q' => $q,
                 'shop_category_id' => $categoryId > 0 ? $categoryId : '',
+                'store_id' => $storeId > 0 ? $storeId : '',
             ],
         ]);
     }
@@ -57,6 +62,7 @@ class ProductController extends Controller
         return Inertia::render('Admin/Products/Form', [
             'product' => null,
             'categories' => $this->categoryOptions(),
+            'stores' => $this->storeOptions(),
         ]);
     }
 
@@ -64,6 +70,7 @@ class ProductController extends Controller
     {
         $data = $this->validated($request);
         $product = new Product($this->payload($data));
+        $product->store_id = $data['store_id'] ?: Store::official()?->id;
         $product->slug = Product::uniqueSlug($data['slug'] ?: $data['name']);
         $this->applyCover($request, $product);
         $product->save();
@@ -85,6 +92,7 @@ class ProductController extends Controller
             'product' => [
                 'id' => $product->id,
                 'shop_category_id' => $product->shop_category_id,
+                'store_id' => $product->store_id,
                 'name' => $product->name,
                 'slug' => $product->slug,
                 'excerpt' => $product->excerpt,
@@ -107,6 +115,7 @@ class ProductController extends Controller
                 ])->values()->all(),
             ],
             'categories' => $this->categoryOptions(),
+            'stores' => $this->storeOptions(),
         ]);
     }
 
@@ -157,6 +166,7 @@ class ProductController extends Controller
     {
         return $request->validate([
             'shop_category_id' => ['nullable', 'integer', 'exists:shop_categories,id'],
+            'store_id' => ['required', 'integer', 'exists:stores,id'],
             'name' => ['required', 'string', 'max:255'],
             'slug' => ['nullable', 'string', 'max:220', Rule::unique('products', 'slug')->ignore($product?->id)],
             'excerpt' => ['nullable', 'string', 'max:2000'],
@@ -189,6 +199,7 @@ class ProductController extends Controller
     {
         return [
             'shop_category_id' => $data['shop_category_id'] ?: null,
+            'store_id' => $data['store_id'] ?? null,
             'name' => $data['name'],
             'excerpt' => $data['excerpt'] ?? null,
             'description_html' => $data['description_html'] ?? null,
@@ -297,6 +308,22 @@ class ProductController extends Controller
         }
 
         $product->variants()->whereNotIn('id', $keepIds)->delete();
+    }
+
+    private function storeOptions(): array
+    {
+        return Store::query()
+            ->orderByDesc('is_official')
+            ->orderBy('name')
+            ->get(['id', 'name', 'status', 'is_official'])
+            ->map(fn (Store $store) => [
+                'id' => $store->id,
+                'name' => $store->name,
+                'status' => $store->status,
+                'is_official' => $store->is_official,
+            ])
+            ->values()
+            ->all();
     }
 
     private function categoryOptions(): array

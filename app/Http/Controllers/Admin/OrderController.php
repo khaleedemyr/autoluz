@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Models\Store;
 use App\Services\ShopOrderService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -17,9 +18,10 @@ class OrderController extends Controller
     {
         $q = trim((string) $request->query('q', ''));
         $status = trim((string) $request->query('status', ''));
+        $storeId = (int) $request->query('store_id', 0);
 
         $orders = Order::query()
-            ->with('user:id,name,email')
+            ->with(['user:id,name,email', 'store'])
             ->withCount('items')
             ->when($q !== '', function ($query) use ($q) {
                 $like = '%'.str_replace(['%', '_'], ['\\%', '\\_'], $q).'%';
@@ -31,6 +33,7 @@ class OrderController extends Controller
                 });
             })
             ->when($status !== '', fn ($query) => $query->where('status', $status))
+            ->when($storeId > 0, fn ($query) => $query->where('store_id', $storeId))
             ->orderByDesc('id')
             ->paginate(20)
             ->withQueryString()
@@ -49,14 +52,19 @@ class OrderController extends Controller
             'filters' => [
                 'q' => $q,
                 'status' => $status,
+                'store_id' => $storeId > 0 ? $storeId : '',
             ],
+            'stores' => Store::query()->orderByDesc('is_official')->orderBy('name')->get(['id', 'name'])->map(fn (Store $store) => [
+                'id' => $store->id,
+                'name' => $store->name,
+            ])->values()->all(),
             'statuses' => $this->statusOptions(),
         ]);
     }
 
     public function show(Order $order): Response
     {
-        $order->load(['items', 'user:id,name,email']);
+        $order->load(['items', 'user:id,name,email', 'store']);
 
         return Inertia::render('Admin/Orders/Show', [
             'order' => [

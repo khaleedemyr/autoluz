@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from 'vue';
+import { computed, reactive, ref, watch } from 'vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import axios from 'axios';
@@ -16,9 +16,10 @@ const props = defineProps({
 
 const { t } = useI18n();
 const cities = ref([]);
-const quotes = ref([]);
 const quoting = ref(false);
 const useNew = ref(!props.addresses.length);
+const quotesByStore = reactive({});
+const selectedByStore = reactive({});
 
 const form = useForm({
     address_id: props.addresses.find((row) => row.is_default)?.id || props.addresses[0]?.id || '',
@@ -31,23 +32,25 @@ const form = useForm({
     city_name: '',
     postal_code: '',
     save_address: true,
-    courier: '',
-    service: '',
-    description: '',
-    cost: 0,
-    etd: '',
+    shippings: [],
     notes: '',
 });
 
 const selectedAddress = computed(() => props.addresses.find((row) => Number(row.id) === Number(form.address_id)));
 const destCityId = computed(() => (useNew.value ? form.city_id : selectedAddress.value?.city_id));
+const groups = computed(() => props.cart.groups || []);
+const shippingTotal = computed(() => Object.values(selectedByStore).reduce((sum, row) => sum + Number(row?.cost || 0), 0));
+const grand = computed(() => Number(props.cart.subtotal || 0) + shippingTotal.value);
+const grandLabel = computed(() => 'Rp ' + Number(grand.value).toLocaleString('id-ID'));
+const allQuoted = computed(() => groups.value.every((group) => selectedByStore[group.id]));
+const originBlocked = computed(() => groups.value.some((group) => !group.origin_ready));
 
 watch(() => form.province_id, async (id) => {
     const province = props.provinces.find((row) => String(row.id) === String(id));
     form.province_name = province?.name || '';
     form.city_id = '';
     form.city_name = '';
-    quotes.value = [];
+    resetQuotes();
     if (!id) {
         cities.value = [];
         return;
@@ -63,11 +66,13 @@ watch(() => form.city_id, (id) => {
 });
 
 watch([destCityId, useNew, () => form.address_id], () => {
-    quotes.value = [];
-    form.courier = '';
-    form.service = '';
-    form.cost = 0;
+    resetQuotes();
 });
+
+function resetQuotes() {
+    Object.keys(quotesByStore).forEach((key) => delete quotesByStore[key]);
+    Object.keys(selectedByStore).forEach((key) => delete selectedByStore[key]);
+}
 
 async function loadQuotes() {
     if (!destCityId.value) {
@@ -77,8 +82,13 @@ async function loadQuotes() {
     quoting.value = true;
     try {
         const { data } = await axios.post(route('shop.checkout.quote'), { city_id: destCityId.value });
-        quotes.value = data.data || [];
-        if (!quotes.value.length) swalError(t('shop_no_shipping'));
+        (data.data || []).forEach((row) => {
+            quotesByStore[row.store_id] = row;
+            delete selectedByStore[row.store_id];
+        });
+        if (!(data.data || []).some((row) => row.options?.length)) {
+            swalError(t('shop_no_shipping'));
+        }
     } catch (e) {
         swalError(e.response?.data?.message || t('shop_no_shipping'));
     } finally {
@@ -86,19 +96,23 @@ async function loadQuotes() {
     }
 }
 
-function pickQuote(row) {
-    form.courier = row.courier;
-    form.service = row.service;
-    form.description = row.description;
-    form.cost = row.cost;
-    form.etd = row.etd;
+function pickQuote(storeId, row) {
+    selectedByStore[storeId] = row;
 }
 
-const grand = computed(() => Number(props.cart.subtotal || 0) + Number(form.cost || 0));
-const grandLabel = computed(() => 'Rp ' + Number(grand.value).toLocaleString('id-ID'));
-
 function submit() {
-    const payload = useNew.value ? { ...form.data(), address_id: null } : form.data();
+    const shippings = groups.value.map((group) => {
+        const picked = selectedByStore[group.id];
+        return {
+            store_id: group.id,
+            courier: picked?.courier,
+            service: picked?.service,
+            description: picked?.description,
+            cost: picked?.cost || 0,
+            etd: picked?.etd,
+        };
+    });
+    const payload = useNew.value ? { ...form.data(), address_id: null, shippings } : { ...form.data(), shippings };
     form.transform(() => payload).post(route('shop.checkout.store'));
 }
 </script>
@@ -112,8 +126,10 @@ function submit() {
             <h1 class="font-display mt-3 text-5xl tracking-[-0.04em]">{{ t('shop_checkout') }}</h1>
             <p v-if="shipping_error" class="mt-4 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800">{{ shipping_error }}</p>
             <p v-if="!midtrans.configured" class="mt-4 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800">{{ t('shop_midtrans_missing') }}</p>
+            <p v-if="originBlocked" class="mt-4 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800">{{ t('shop_store_origin_missing') }}</p>
             <p v-if="form.errors.payment" class="mt-4 text-sm text-red-600">{{ form.errors.payment }}</p>
             <p v-if="form.errors.shipping" class="mt-4 text-sm text-red-600">{{ form.errors.shipping }}</p>
+            <p v-if="form.errors.cart" class="mt-4 text-sm text-red-600">{{ form.errors.cart }}</p>
 
             <form class="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem]" @submit.prevent="submit">
                 <div class="space-y-6">
@@ -157,30 +173,52 @@ function submit() {
                     <div class="rounded-2xl border border-[var(--line)] bg-white p-5 shadow-soft">
                         <div class="flex items-center justify-between gap-3">
                             <h2 class="font-semibold">{{ t('shop_shipping') }}</h2>
-                            <button type="button" class="rounded-full border border-charcoal px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em]" :disabled="quoting" @click="loadQuotes">
+                            <button type="button" class="rounded-full border border-charcoal px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em]" :disabled="quoting || originBlocked" @click="loadQuotes">
                                 {{ quoting ? t('shop_calculating') : t('shop_calc_shipping') }}
                             </button>
                         </div>
-                        <div v-if="quotes.length" class="mt-4 space-y-2">
-                            <label v-for="row in quotes" :key="row.courier + row.service" class="flex cursor-pointer items-center justify-between gap-3 rounded-xl border p-3" :class="form.service === row.service && form.courier === row.courier ? 'border-brand' : 'border-[var(--line)]'">
-                                <span class="flex items-center gap-3">
-                                    <input type="radio" class="text-brand" :checked="form.service === row.service && form.courier === row.courier" @change="pickQuote(row)" />
-                                    <span>
-                                        <strong class="uppercase">{{ row.courier }} {{ row.service }}</strong>
-                                        <span class="block text-xs text-neutral-500">{{ row.description }} · {{ row.etd }} hari</span>
+                        <p class="mt-2 text-xs text-neutral-500">{{ t('shop_split_hint') }}</p>
+
+                        <div v-for="group in groups" :key="group.id" class="mt-5 border-t border-[var(--line)] pt-4">
+                            <div class="flex items-center justify-between gap-3">
+                                <p class="text-sm font-semibold">{{ group.store?.name }}</p>
+                                <p class="text-xs text-neutral-500">{{ group.subtotal_label }}</p>
+                            </div>
+                            <p v-if="!group.origin_ready" class="mt-2 text-xs text-amber-700">{{ t('shop_store_origin_missing') }}</p>
+                            <p v-else-if="quotesByStore[group.id]?.error" class="mt-2 text-xs text-red-600">{{ quotesByStore[group.id].error }}</p>
+                            <div v-if="quotesByStore[group.id]?.options?.length" class="mt-3 space-y-2">
+                                <label
+                                    v-for="row in quotesByStore[group.id].options"
+                                    :key="row.courier + row.service"
+                                    class="flex cursor-pointer items-center justify-between gap-3 rounded-xl border p-3"
+                                    :class="selectedByStore[group.id]?.service === row.service && selectedByStore[group.id]?.courier === row.courier ? 'border-brand' : 'border-[var(--line)]'"
+                                >
+                                    <span class="flex items-center gap-3">
+                                        <input type="radio" class="text-brand" :checked="selectedByStore[group.id]?.service === row.service && selectedByStore[group.id]?.courier === row.courier" @change="pickQuote(group.id, row)" />
+                                        <span>
+                                            <strong class="uppercase">{{ row.courier }} {{ row.service }}</strong>
+                                            <span class="block text-xs text-neutral-500">{{ row.description }} · {{ row.etd }} hari</span>
+                                        </span>
                                     </span>
-                                </span>
-                                <span class="font-semibold">Rp {{ Number(row.cost).toLocaleString('id-ID') }}</span>
-                            </label>
+                                    <span class="font-semibold">Rp {{ Number(row.cost).toLocaleString('id-ID') }}</span>
+                                </label>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <aside class="h-fit rounded-2xl border border-[var(--line)] bg-white p-5 shadow-soft">
                     <h2 class="font-semibold">{{ t('shop_summary') }}</h2>
-                    <div v-for="item in cart.items" :key="item.id" class="mt-3 flex justify-between gap-3 text-sm">
-                        <span>{{ item.name }} ×{{ item.qty }}</span>
-                        <span>{{ item.line_total_label }}</span>
+                    <div v-for="group in groups" :key="group.id" class="mt-4 border-t border-[var(--line)] pt-3">
+                        <p class="text-xs font-semibold uppercase tracking-[0.12em] text-neutral-400">{{ group.store?.name }}</p>
+                        <div v-for="item in group.items" :key="item.id" class="mt-2 flex justify-between gap-3 text-sm">
+                            <span>{{ item.name }} ×{{ item.qty }}</span>
+                            <span>{{ item.line_total_label }}</span>
+                        </div>
+                        <div class="mt-2 flex justify-between text-xs text-neutral-500">
+                            <span>{{ t('shop_shipping') }}</span>
+                            <span>Rp {{ Number(selectedByStore[group.id]?.cost || 0).toLocaleString('id-ID') }}</span>
+                        </div>
                     </div>
                     <div class="mt-4 flex justify-between text-sm">
                         <span>{{ t('shop_subtotal') }}</span>
@@ -188,14 +226,14 @@ function submit() {
                     </div>
                     <div class="mt-2 flex justify-between text-sm">
                         <span>{{ t('shop_shipping') }}</span>
-                        <span>Rp {{ Number(form.cost || 0).toLocaleString('id-ID') }}</span>
+                        <span>Rp {{ Number(shippingTotal).toLocaleString('id-ID') }}</span>
                     </div>
                     <div class="mt-4 flex justify-between font-display text-2xl">
                         <span>{{ t('shop_total') }}</span>
                         <span>{{ grandLabel }}</span>
                     </div>
                     <textarea v-model="form.notes" rows="2" :placeholder="t('shop_notes')" class="mt-4 w-full rounded-xl border-black/10 text-sm" />
-                    <button type="submit" class="mt-5 w-full rounded-full bg-brand px-5 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-white disabled:opacity-50" :disabled="form.processing || !form.courier || !midtrans.configured">
+                    <button type="submit" class="mt-5 w-full rounded-full bg-brand px-5 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-white disabled:opacity-50" :disabled="form.processing || !allQuoted || !midtrans.configured || originBlocked">
                         {{ t('shop_pay') }}
                     </button>
                     <Link :href="route('shop.cart')" class="mt-3 block text-center text-xs uppercase tracking-[0.12em] text-neutral-500">{{ t('shop_back_cart') }}</Link>

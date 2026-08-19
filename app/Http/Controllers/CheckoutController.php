@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Store;
 use App\Models\UserAddress;
 use App\Services\CartService;
 use App\Services\MidtransService;
@@ -85,22 +86,56 @@ class CheckoutController extends Controller
     {
         $data = $request->validate([
             'city_id' => ['required', 'string', 'max:20'],
+            'store_id' => ['nullable', 'integer'],
         ]);
 
         $cart = $this->carts->current($request->user(), $request);
         $summary = $this->carts->summary($cart);
 
-        if ($summary['items'] === []) {
+        if ($summary['groups'] === []) {
             return response()->json(['message' => 'Keranjang kosong.', 'data' => []], 422);
         }
 
-        try {
-            $options = $this->rajaongkir->costs($data['city_id'], max(1, $summary['weight_grams']));
-        } catch (RuntimeException $e) {
-            return response()->json(['message' => $e->getMessage(), 'data' => []], 422);
+        $groups = collect($summary['groups']);
+        if (! empty($data['store_id'])) {
+            $groups = $groups->where('id', (int) $data['store_id'])->values();
         }
 
-        return response()->json(['data' => $options]);
+        $result = [];
+        foreach ($groups as $group) {
+            $storeId = (int) ($group['id'] ?? 0);
+            $store = $storeId ? Store::query()->find($storeId) : null;
+            $row = [
+                'store_id' => $storeId,
+                'origin_ready' => (bool) ($group['origin_ready'] ?? false),
+                'error' => null,
+                'options' => [],
+            ];
+
+            if (! $store || ! $store->originReady()) {
+                $row['error'] = 'Toko belum mengatur kota asal pengiriman.';
+                $result[] = $row;
+                continue;
+            }
+
+            try {
+                $row['options'] = $this->rajaongkir->costs(
+                    $data['city_id'],
+                    max(1, (int) $group['weight_grams']),
+                    $store->courierList(),
+                    $store->origin_city_id,
+                );
+                if ($row['options'] === []) {
+                    $row['error'] = 'Tidak ada opsi ongkir dari toko ini.';
+                }
+            } catch (RuntimeException $e) {
+                $row['error'] = $e->getMessage();
+            }
+
+            $result[] = $row;
+        }
+
+        return response()->json(['data' => $result]);
     }
 
     public function store(Request $request): RedirectResponse
@@ -116,11 +151,13 @@ class CheckoutController extends Controller
             'city_name' => ['required_without:address_id', 'nullable', 'string', 'max:120'],
             'postal_code' => ['nullable', 'string', 'max:12'],
             'save_address' => ['boolean'],
-            'courier' => ['required', 'string', 'max:20'],
-            'service' => ['required', 'string', 'max:40'],
-            'description' => ['nullable', 'string', 'max:80'],
-            'cost' => ['required', 'integer', 'min:0'],
-            'etd' => ['nullable', 'string', 'max:40'],
+            'shippings' => ['required', 'array', 'min:1'],
+            'shippings.*.store_id' => ['required', 'integer', 'exists:stores,id'],
+            'shippings.*.courier' => ['required', 'string', 'max:20'],
+            'shippings.*.service' => ['required', 'string', 'max:40'],
+            'shippings.*.description' => ['nullable', 'string', 'max:80'],
+            'shippings.*.cost' => ['required', 'integer', 'min:0'],
+            'shippings.*.etd' => ['nullable', 'string', 'max:40'],
             'notes' => ['nullable', 'string', 'max:500'],
         ]);
 
@@ -129,23 +166,17 @@ class CheckoutController extends Controller
 
         $cart = $this->carts->current($user, $request);
         $summary = $this->carts->summary($cart);
-        $this->assertShipping($address->city_id, $summary['weight_grams'], $data);
+        $this->assertShippings($address->city_id, $summary['groups'], $data['shippings']);
 
         try {
-            $order = $this->orders->checkout($user, $cart, $address, [
-                'courier' => $data['courier'],
-                'service' => $data['service'],
-                'description' => $data['description'] ?? $data['service'],
-                'cost' => (int) $data['cost'],
-                'etd' => $data['etd'] ?? null,
-            ], $data['notes'] ?? null);
+            $checkout = $this->orders->checkout($user, $cart, $address, $data['shippings'], $data['notes'] ?? null);
         } catch (RuntimeException $e) {
             throw ValidationException::withMessages(['payment' => $e->getMessage()]);
         }
 
         return redirect()
-            ->route('shop.orders.show', $order->number)
-            ->with('snap_token', $order->snap_token)
+            ->route('shop.checkouts.show', $checkout->number)
+            ->with('snap_token', $checkout->snap_token)
             ->with('success', 'Pesanan dibuat. Lanjutkan pembayaran.');
     }
 
@@ -185,22 +216,30 @@ class CheckoutController extends Controller
     }
 
     /**
-     * @param  array<string, mixed>  $data
+     * @param  list<array<string, mixed>>  $groups
+     * @param  list<array<string, mixed>>  $shippings
      */
-    private function assertShipping(string $cityId, int $weight, array $data): void
+    private function assertShippings(string $cityId, array $groups, array $shippings): void
     {
-        try {
-            $options = $this->rajaongkir->costs($cityId, max(1, $weight));
-        } catch (RuntimeException $e) {
-            throw ValidationException::withMessages(['shipping' => $e->getMessage()]);
-        }
+        $byStore = collect($shippings)->keyBy(fn ($row) => (int) $row['store_id']);
 
-        $match = collect($options)->first(fn ($row) => $row['courier'] === $data['courier']
-            && $row['service'] === $data['service']
-            && (int) $row['cost'] === (int) $data['cost']);
+        foreach ($groups as $group) {
+            $storeId = (int) ($group['id'] ?? 0);
+            $store = $storeId ? Store::query()->find($storeId) : null;
+            $name = $group['store']['name'] ?? 'Toko';
+            $shipping = $byStore->get($storeId);
 
-        if (! $match) {
-            throw ValidationException::withMessages(['shipping' => 'Opsi ongkir sudah berubah. Hitung ulang.']);
+            if (! $store || ! $store->originReady() || ! $shipping) {
+                throw ValidationException::withMessages([
+                    'shipping' => 'Ongkir untuk '.$name.' belum lengkap.',
+                ]);
+            }
+
+            if (! $this->orders->shippingMatchesStore($store, $cityId, (int) $group['weight_grams'], $shipping, $this->rajaongkir)) {
+                throw ValidationException::withMessages([
+                    'shipping' => 'Opsi ongkir '.$name.' sudah berubah. Hitung ulang.',
+                ]);
+            }
         }
     }
 }

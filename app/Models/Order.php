@@ -20,6 +20,8 @@ class Order extends Model
 
     protected $fillable = [
         'user_id',
+        'store_id',
+        'checkout_id',
         'number',
         'status',
         'subtotal',
@@ -64,6 +66,16 @@ class Order extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function store(): BelongsTo
+    {
+        return $this->belongsTo(Store::class);
+    }
+
+    public function checkout(): BelongsTo
+    {
+        return $this->belongsTo(ShopCheckout::class, 'checkout_id');
+    }
+
     public function items(): HasMany
     {
         return $this->hasMany(OrderItem::class);
@@ -76,6 +88,12 @@ class Order extends Model
 
     public function canPay(): bool
     {
+        if ($this->checkout_id) {
+            $checkout = $this->relationLoaded('checkout') ? $this->checkout : $this->checkout()->first();
+
+            return $this->status === self::STATUS_PENDING && $checkout?->canPay();
+        }
+
         return $this->isPendingPayment();
     }
 
@@ -157,6 +175,11 @@ class Order extends Model
             'province_name' => $this->province_name,
             'postal_code' => $this->postal_code,
             'can_pay' => $this->canPay(),
+            'checkout_number' => $this->relationLoaded('checkout') ? $this->checkout?->number : null,
+            'checkout_url' => $this->checkout_id && $this->relationLoaded('checkout') && $this->checkout
+                ? route('shop.checkouts.show', $this->checkout->number)
+                : null,
+            'store' => $this->relationLoaded('store') && $this->store ? $this->store->toCardArray() : null,
             'paid_at' => optional($this->paid_at)?->toIso8601String(),
             'created_at' => optional($this->created_at)?->toIso8601String(),
             'timeline' => $this->timeline(),

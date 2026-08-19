@@ -17,6 +17,12 @@ use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Admin\ShopCategoryController as AdminShopCategoryController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\ShopSettingController as AdminShopSettingController;
+use App\Http\Controllers\Admin\StoreController as AdminStoreController;
+use App\Http\Controllers\ShopCheckoutController;
+use App\Http\Controllers\Seller\DashboardController as SellerDashboardController;
+use App\Http\Controllers\Seller\ProductController as SellerProductController;
+use App\Http\Controllers\Seller\OrderController as SellerOrderController;
+use App\Http\Controllers\Seller\StoreSettingController as SellerStoreSettingController;
 use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\ArticleShareController;
 use App\Http\Controllers\BrandController;
@@ -91,6 +97,7 @@ Route::get('/galeri/{slug}', [GalleryController::class, 'show'])->name('gallerie
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 
 Route::get('/toko', [ShopController::class, 'index'])->name('shop.index');
+Route::get('/toko/m/{store:slug}', [ShopController::class, 'showStore'])->name('shop.stores.show');
 Route::get('/toko/keranjang', [CartController::class, 'show'])->name('shop.cart');
 Route::post('/toko/keranjang', [CartController::class, 'store'])
     ->middleware('throttle:40,1')
@@ -115,6 +122,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/toko/checkout', [CheckoutController::class, 'store'])
         ->middleware('throttle:10,1')
         ->name('shop.checkout.store');
+    Route::get('/toko/bayar/{checkout:number}', [ShopCheckoutController::class, 'show'])->name('shop.checkouts.show');
+    Route::post('/toko/bayar/{checkout:number}/snap', [ShopCheckoutController::class, 'pay'])
+        ->middleware('throttle:20,1')
+        ->name('shop.checkouts.pay');
     Route::get('/toko/pesanan', [ShopOrderController::class, 'index'])->name('shop.orders.index');
     Route::get('/toko/pesanan/{order:number}', [ShopOrderController::class, 'show'])->name('shop.orders.show');
     Route::post('/toko/pesanan/{order:number}/bayar', [ShopOrderController::class, 'pay'])
@@ -228,6 +239,10 @@ Route::get('/dashboard', function () {
         return redirect()->route('admin.dashboard');
     }
 
+    if (auth()->user()?->canAccessSeller()) {
+        return redirect()->route('seller.dashboard');
+    }
+
     return redirect()->route('community.index');
 })->middleware(['auth'])->name('dashboard');
 
@@ -312,6 +327,13 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/shop-settings/cities', [AdminShopSettingController::class, 'cities'])->name('shop-settings.cities');
     Route::put('/shop-settings', [AdminShopSettingController::class, 'update'])->name('shop-settings.update');
 
+    Route::get('/stores', [AdminStoreController::class, 'index'])->name('stores.index');
+    Route::get('/stores/create', [AdminStoreController::class, 'create'])->name('stores.create');
+    Route::post('/stores', [AdminStoreController::class, 'store'])->name('stores.store');
+    Route::get('/stores/{store}/edit', [AdminStoreController::class, 'edit'])->name('stores.edit');
+    Route::put('/stores/{store}', [AdminStoreController::class, 'update'])->name('stores.update');
+    Route::delete('/stores/{store}', [AdminStoreController::class, 'destroy'])->name('stores.destroy');
+
     Route::get('/galleries', [AdminGalleryController::class, 'index'])->name('galleries.index');
     Route::get('/galleries/create', [AdminGalleryController::class, 'create'])->name('galleries.create');
     Route::post('/galleries', [AdminGalleryController::class, 'store'])->name('galleries.store');
@@ -324,6 +346,23 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::delete('/newsletter/{subscriber}', [AdminNewsletterSubscriberController::class, 'destroy'])->name('newsletter.destroy');
 
     Route::post('/seo/generate', [AdminSeoController::class, 'generate'])->name('seo.generate');
+});
+
+Route::middleware(['auth', 'seller'])->prefix('seller')->name('seller.')->group(function () {
+    Route::get('/', [SellerDashboardController::class, 'index'])->name('dashboard');
+    Route::get('/products', [SellerProductController::class, 'index'])->name('products.index');
+    Route::get('/products/create', [SellerProductController::class, 'create'])->name('products.create');
+    Route::post('/products', [SellerProductController::class, 'store'])->name('products.store');
+    Route::post('/products/upload-image', [SellerProductController::class, 'uploadImage'])->name('products.upload-image');
+    Route::get('/products/{product}/edit', [SellerProductController::class, 'edit'])->name('products.edit');
+    Route::put('/products/{product}', [SellerProductController::class, 'update'])->name('products.update');
+    Route::delete('/products/{product}', [SellerProductController::class, 'destroy'])->name('products.destroy');
+    Route::get('/orders', [SellerOrderController::class, 'index'])->name('orders.index');
+    Route::get('/orders/{order}', [SellerOrderController::class, 'show'])->name('orders.show');
+    Route::put('/orders/{order}', [SellerOrderController::class, 'update'])->name('orders.update');
+    Route::get('/settings', [SellerStoreSettingController::class, 'edit'])->name('settings.edit');
+    Route::get('/settings/cities', [SellerStoreSettingController::class, 'cities'])->name('settings.cities');
+    Route::put('/settings', [SellerStoreSettingController::class, 'update'])->name('settings.update');
 });
 
 require __DIR__.'/auth.php';

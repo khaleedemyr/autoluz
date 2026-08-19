@@ -2,14 +2,19 @@
 import { computed, ref, watch } from 'vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
+import SellerLayout from '@/Layouts/SellerLayout.vue';
 import RichTextEditor from '@/Components/Admin/RichTextEditor.vue';
 import { slugify } from '@/utils/slugify';
 
 const props = defineProps({
     product: { type: Object, default: null },
     categories: { type: Array, default: () => [] },
+    stores: { type: Array, default: () => [] },
+    mode: { type: String, default: 'admin' },
 });
 
+const isSeller = computed(() => props.mode === 'seller');
+const layout = computed(() => (isSeller.value ? SellerLayout : AdminLayout));
 const isEdit = computed(() => !!props.product?.id);
 const slugManual = ref(!!props.product?.slug);
 const coverPreview = ref(props.product?.cover_image_url || null);
@@ -20,6 +25,7 @@ const emptyVariant = () => ({ id: null, sku: '', size: '', color: '', price: '',
 
 const form = useForm({
     shop_category_id: props.product?.shop_category_id || '',
+    store_id: props.product?.store_id || props.stores.find((row) => row.is_official)?.id || props.stores[0]?.id || '',
     name: props.product?.name || '',
     slug: props.product?.slug || '',
     excerpt: props.product?.excerpt || '',
@@ -84,16 +90,16 @@ function submit() {
     });
 
     if (isEdit.value) {
-        form.transform((data) => ({ ...payload(data), _method: 'put' })).post(route('admin.products.update', props.product.id), { forceFormData: true });
+        form.transform((data) => ({ ...payload(data), _method: 'put' })).post(route(isSeller.value ? 'seller.products.update' : 'admin.products.update', props.product.id), { forceFormData: true });
         return;
     }
 
-    form.transform(payload).post(route('admin.products.store'), { forceFormData: true });
+    form.transform(payload).post(route(isSeller.value ? 'seller.products.store' : 'admin.products.store'), { forceFormData: true });
 }
 </script>
 
 <template>
-    <AdminLayout :title="isEdit ? 'Edit Produk' : 'Produk Baru'">
+    <component :is="layout" :title="isEdit ? 'Edit Produk' : 'Produk Baru'">
         <Head :title="isEdit ? 'Edit Produk' : 'Produk Baru'" />
 
         <form class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]" @submit.prevent="submit">
@@ -102,18 +108,22 @@ function submit() {
                     <input v-model="form.name" type="text" required placeholder="Nama produk (contoh: Kaos Autoluz)" class="w-full rounded-xl border-black/10" />
                     <input v-model="form.slug" type="text" class="w-full rounded-xl border-black/10" @input="slugManual = true" />
                     <div class="grid gap-3 sm:grid-cols-2">
+                        <select v-if="!isSeller" v-model="form.store_id" class="w-full rounded-xl border-black/10" required>
+                            <option value="">— Toko —</option>
+                            <option v-for="store in stores" :key="store.id" :value="store.id">{{ store.name }}</option>
+                        </select>
                         <select v-model="form.shop_category_id" class="w-full rounded-xl border-black/10">
                             <option value="">— Kategori —</option>
                             <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
                         </select>
-                        <input v-model="form.weight_grams" type="number" min="1" required placeholder="Berat (gram)" class="w-full rounded-xl border-black/10" />
+                        <input v-model="form.weight_grams" type="number" min="1" required placeholder="Berat (gram)" class="w-full rounded-xl border-black/10" :class="isSeller ? 'sm:col-span-1' : ''" />
                     </div>
                     <textarea v-model="form.excerpt" rows="3" placeholder="Ringkasan singkat" class="w-full rounded-xl border-black/10" />
                     <div>
                         <label class="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-neutral-500">Deskripsi</label>
                         <RichTextEditor
                             v-model="form.description_html"
-                            :upload-url="route('admin.products.upload-image')"
+                            :upload-url="route(isSeller ? 'seller.products.upload-image' : 'admin.products.upload-image')"
                             placeholder="Tulis deskripsi produk."
                         />
                     </div>
@@ -170,7 +180,7 @@ function submit() {
                     <input v-model="form.published_at" type="datetime-local" class="w-full rounded-xl border-black/10" />
                     <label class="mb-1 mt-4 block text-xs font-semibold uppercase tracking-[0.14em] text-neutral-500">Sort</label>
                     <input v-model="form.sort_order" type="number" min="0" class="w-full rounded-xl border-black/10" />
-                    <label class="mt-4 flex items-center gap-2 text-sm">
+                    <label v-if="!isSeller" class="mt-4 flex items-center gap-2 text-sm">
                         <input v-model="form.featured" type="checkbox" class="rounded text-brand" />
                         Tampil di homepage
                     </label>
@@ -192,11 +202,11 @@ function submit() {
                     <button type="submit" class="rounded-full bg-brand px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.14em] text-white" :disabled="form.processing">
                         Simpan
                     </button>
-                    <Link :href="route('admin.products.index')" class="rounded-full border border-black/10 px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.14em]">
+                    <Link :href="route(isSeller ? 'seller.products.index' : 'admin.products.index')" class="rounded-full border border-black/10 px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.14em]">
                         Kembali
                     </Link>
                 </div>
             </aside>
         </form>
-    </AdminLayout>
+    </component>
 </template>

@@ -46,13 +46,7 @@ class CartService
     {
         $cart = $this->find($user, $request);
 
-        return $cart ? $this->summary($cart) : [
-            'count' => 0,
-            'subtotal' => 0,
-            'subtotal_label' => MediaUrl::formatRupiah(0),
-            'weight_grams' => 0,
-            'items' => [],
-        ];
+        return $cart ? $this->summary($cart) : $this->emptySummary();
     }
 
     public function add(Cart $cart, int $variantId, int $qty = 1): CartItem
@@ -152,36 +146,83 @@ class CartService
     }
 
     /**
-     * @return array{count: int, subtotal: int, subtotal_label: string, items: list<array>}
+     * @return array{count: int, subtotal: int, subtotal_label: string, weight_grams: int, items: list<array>, groups: list<array>}
      */
     public function summary(Cart $cart): array
     {
-        $cart->load(['items.product.images', 'items.variant']);
+        $cart->load(['items.product.images', 'items.product.store', 'items.variant']);
         $items = $cart->items
             ->filter(fn (CartItem $item) => $item->product && $item->variant)
             ->values();
 
         $subtotal = $items->sum(fn (CartItem $item) => $item->lineTotal());
         $count = (int) $items->sum('qty');
+        $publicItems = $items->map->toArrayPublic()->values();
+
+        $groups = $items
+            ->groupBy(fn (CartItem $item) => (int) ($item->product?->store_id ?? 0))
+            ->map(function ($groupItems) {
+                $store = $groupItems->first()?->product?->store;
+                $groupSubtotal = $groupItems->sum(fn (CartItem $item) => $item->lineTotal());
+                $weight = (int) $groupItems->sum(fn (CartItem $item) => $item->toArrayPublic()['weight_grams']);
+
+                return [
+                    'id' => $store?->id,
+                    'store' => $store?->toCardArray(),
+                    'origin_ready' => (bool) $store?->originReady(),
+                    'origin_city_name' => $store?->origin_city_name,
+                    'subtotal' => $groupSubtotal,
+                    'subtotal_label' => MediaUrl::formatRupiah($groupSubtotal),
+                    'weight_grams' => $weight,
+                    'items' => $groupItems->map->toArrayPublic()->values()->all(),
+                ];
+            })
+            ->values()
+            ->all();
 
         return [
             'count' => $count,
             'subtotal' => $subtotal,
             'subtotal_label' => MediaUrl::formatRupiah($subtotal),
-            'weight_grams' => (int) $items->sum(fn (CartItem $item) => $item->toArrayPublic()['weight_grams']),
-            'items' => $items->map->toArrayPublic()->values()->all(),
+            'weight_grams' => (int) $publicItems->sum('weight_grams'),
+            'items' => $publicItems->all(),
+            'groups' => $groups,
+        ];
+    }
+
+    /**
+     * @return array{count: int, subtotal: int, subtotal_label: string, weight_grams: int, items: list<array>, groups: list<array>}
+     */
+    public function emptySummary(): array
+    {
+        return [
+            'count' => 0,
+            'subtotal' => 0,
+            'subtotal_label' => MediaUrl::formatRupiah(0),
+            'weight_grams' => 0,
+            'items' => [],
+            'groups' => [],
         ];
     }
 
     public function sellableVariant(int $variantId): ProductVariant
     {
         $variant = ProductVariant::query()
-            ->with('product')
+            ->with('product.store')
             ->whereKey($variantId)
             ->active()
             ->first();
 
-        if (! $variant || ! $variant->product || $variant->product->status !== 'published') {
+        $product = $variant?->product;
+        $store = $product?->store;
+
+        if (
+            ! $variant
+            || ! $product
+            || $product->status !== 'published'
+            || ! $store
+            || ! $store->isApproved()
+        ) {
             throw ValidationException::withMessages([
                 'variant_id' => 'Varian produk tidak tersedia.',
             ]);

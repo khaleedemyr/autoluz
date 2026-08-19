@@ -13,6 +13,7 @@ class Product extends Model
 {
     protected $fillable = [
         'shop_category_id',
+        'store_id',
         'name',
         'slug',
         'excerpt',
@@ -33,6 +34,11 @@ class Product extends Model
             'published_at' => 'datetime',
             'sort_order' => 'integer',
         ];
+    }
+
+    public function store(): BelongsTo
+    {
+        return $this->belongsTo(Store::class);
     }
 
     public function category(): BelongsTo
@@ -56,7 +62,8 @@ class Product extends Model
             ->where('status', 'published')
             ->where(function (Builder $q) {
                 $q->whereNull('published_at')->orWhere('published_at', '<=', now());
-            });
+            })
+            ->whereHas('store', fn (Builder $q) => $q->where('status', Store::STATUS_APPROVED));
     }
 
     public function scopeFeatured(Builder $query): Builder
@@ -107,6 +114,7 @@ class Product extends Model
             'in_stock' => $this->totalStock() > 0,
             'featured' => $this->featured,
             'url' => route('shop.show', $this->slug),
+            'store' => $this->relationLoaded('store') && $this->store ? $this->store->toCardArray() : null,
             'category' => $this->relationLoaded('category') && $this->category ? [
                 'id' => $this->category->id,
                 'name' => $this->category->name,

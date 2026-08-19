@@ -104,6 +104,16 @@ class User extends Authenticatable
         return $this->hasMany(CommunityNotification::class);
     }
 
+    public function ownedStore(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(Store::class);
+    }
+
+    public function canAccessSeller(): bool
+    {
+        return $this->ownedStore()->exists();
+    }
+
     public function cart(): \Illuminate\Database\Eloquent\Relations\HasOne
     {
         return $this->hasOne(Cart::class);

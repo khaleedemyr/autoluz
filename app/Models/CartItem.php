@@ -68,6 +68,10 @@ class CartItem extends Model
             'stock' => (int) ($variant?->stock ?? 0),
             'weight_grams' => (int) ($product?->weight_grams ?? 0) * $this->qty,
             'in_stock' => (int) ($variant?->stock ?? 0) >= $this->qty,
+            'store_id' => $product?->store_id,
+            'store' => $product?->relationLoaded('store') && $product->store
+                ? $product->store->toCardArray()
+                : null,
         ];
     }
 }

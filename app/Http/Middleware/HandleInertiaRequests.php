@@ -28,6 +28,20 @@ class HandleInertiaRequests extends Middleware
                     'bio' => $request->user()->bio,
                     'avatar_url' => $request->user()->avatarUrl(),
                     'is_admin' => $request->user()->canAccessAdmin(),
+                    'is_seller' => (bool) $request->user()->ownedStore,
+                    'store' => $request->user()->ownedStore ? [
+                        'id' => $request->user()->ownedStore->id,
+                        'name' => $request->user()->ownedStore->name,
+                        'slug' => $request->user()->ownedStore->slug,
+                        'status' => $request->user()->ownedStore->status,
+                    ] : null,
+                    'is_seller' => (bool) $request->user()->ownedStore,
+                    'store' => $request->user()->ownedStore ? [
+                        'id' => $request->user()->ownedStore->id,
+                        'name' => $request->user()->ownedStore->name,
+                        'slug' => $request->user()->ownedStore->slug,
+                        'status' => $request->user()->ownedStore->status,
+                    ] : null,
                     'permissions' => $request->user()->loadMissing('role')->adminPermissionKeys(),
                     'role_name' => $request->user()->role?->name,
                     'unread_notifications' => $request->user()->communityNotifications()
@@ -94,6 +108,7 @@ class HandleInertiaRequests extends Middleware
                         'subtotal_label' => 'Rp 0',
                         'weight_grams' => 0,
                         'items' => [],
+                        'groups' => [],
                     ];
                 }
             },

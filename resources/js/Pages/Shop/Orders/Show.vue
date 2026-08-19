@@ -70,7 +70,13 @@ onMounted(() => {
                 <div>
                     <p class="section-label">{{ t('shop_label') }}</p>
                     <h1 class="font-display mt-2 text-4xl tracking-[-0.04em]">{{ order.number }}</h1>
+                    <p v-if="order.store" class="mt-1 text-sm">
+                        <Link :href="order.store.url" class="text-brand hover:underline">{{ order.store.name }}</Link>
+                    </p>
                     <p class="mt-2 text-neutral-500">{{ order.status_label }}</p>
+                    <Link v-if="order.checkout_url" :href="order.checkout_url" class="mt-2 inline-block text-xs font-semibold uppercase tracking-[0.12em] text-brand">
+                        {{ t('shop_parent_checkout') }} {{ order.checkout_number }}
+                    </Link>
                 </div>
                 <button
                     v-if="order.can_pay"

@@ -37,13 +37,7 @@ class ShopSettingController extends Controller
             'settings' => $settings->toAdminArray(),
             'provinces' => $provinces,
             'cities' => $cities,
-            'courierOptions' => [
-                ['value' => 'jne', 'label' => 'JNE'],
-                ['value' => 'jnt', 'label' => 'J&T'],
-                ['value' => 'pos', 'label' => 'POS'],
-                ['value' => 'sicepat', 'label' => 'SiCepat'],
-                ['value' => 'tiki', 'label' => 'TIKI'],
-            ],
+            'courierOptions' => \App\Models\Store::courierOptions(),
             'rajaongkir_error' => $error,
             'rajaongkir_configured' => $rajaongkir->configured(),
             'midtrans_configured' => filled(config('shop.midtrans.server_key')),
@@ -79,6 +73,20 @@ class ShopSettingController extends Controller
         ]);
 
         ShopSetting::current()->update($data);
+
+        $official = \App\Models\Store::official();
+        if ($official) {
+            $official->update([
+                'name' => $data['store_name'],
+                'contact_phone' => $data['contact_phone'] ?? null,
+                'pickup_address' => $data['pickup_address'] ?? null,
+                'origin_province_id' => $data['origin_province_id'] ?? null,
+                'origin_province_name' => $data['origin_province_name'] ?? null,
+                'origin_city_id' => $data['origin_city_id'] ?? null,
+                'origin_city_name' => $data['origin_city_name'] ?? null,
+                'couriers' => $data['couriers'],
+            ]);
+        }
 
         return back()->with('success', 'Pengaturan toko disimpan.');
     }

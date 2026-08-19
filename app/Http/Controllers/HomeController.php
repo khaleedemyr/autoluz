@@ -172,7 +172,7 @@ class HomeController extends Controller
         if (Schema::hasTable('products')) {
             $shopProducts = Product::query()
                 ->published()
-                ->with(['category', 'variants', 'images'])
+                ->with(['category', 'variants', 'images', 'store'])
                 ->orderByDesc('featured')
                 ->orderByDesc('published_at')
                 ->limit(4)

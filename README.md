@@ -73,11 +73,14 @@ Imports categories then articles with upsert on legacy WordPress IDs.
 | `/berita/{slug}` | Article detail |
 | `/kategori/{slug}` | Category listing |
 | `/cari?q=` | Search |
-| `/toko` | Online shop |
+| `/toko` | Online shop (approved stores) |
+| `/toko/m/{slug}` | Partner store page |
 | `/toko/{slug}` | Product detail |
-| `/toko/keranjang` | Cart |
-| `/toko/checkout` | Checkout (login required) |
+| `/toko/keranjang` | Cart (grouped by store) |
+| `/toko/checkout` | Checkout: one shipping quote per store, one Midtrans payment |
+| `/toko/bayar/{number}` | Combined checkout payment |
 | `/toko/pesanan` | Visitor order dashboard |
+| `/seller` | Seller dashboard (store owner) |
 | `/sitemap.xml` | Sitemap |
 
 ## Shop (Midtrans + RajaOngkir)
@@ -92,7 +95,11 @@ RAJAONGKIR_API_KEY=
 RAJAONGKIR_BASE_URL=https://rajaongkir.komerce.id/api/v1
 ```
 
-Admin: Produk, Kategori Toko, Pesanan, Pengaturan Toko (kota asal + kurir).
+Admin: Produk, Toko Partner, Kategori Toko, Pesanan, Pengaturan Toko (kota asal + kurir).
+
+Toko partner: Autoluz official + verified brand/community shops. Admin membuat toko, assign owner, lalu approve/suspend. Seller mengelola produk, pesanan, dan kota asal di `/seller`. Keranjang/checkout dipecah per toko (ongkir masing-masing), dibayar sekali via Midtrans.
+
+Setiap toko harus punya kota asal RajaOngkir. Pengaturan toko resmi di admin juga menyalin origin ke store `autoluz`.
 
 Midtrans Payment Notification URL: `https://autoluz.id/toko/midtrans/notification`
 

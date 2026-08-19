@@ -9,22 +9,25 @@ import { useI18n } from '@/composables/useI18n';
 const props = defineProps({
     products: { type: Object, required: true },
     categories: { type: Array, default: () => [] },
-    filters: { type: Object, default: () => ({ q: '', kategori: '', sort: 'newest', min: '', max: '' }) },
+    stores: { type: Array, default: () => [] },
+    filters: { type: Object, default: () => ({ q: '', kategori: '', toko: '', sort: 'newest', min: '', max: '' }) },
 });
 
 const { t } = useI18n();
 const q = ref(props.filters.q || '');
 const kategori = ref(props.filters.kategori || '');
+const toko = ref(props.filters.toko || '');
 const sort = ref(props.filters.sort || 'newest');
 const min = ref(props.filters.min || '');
 const max = ref(props.filters.max || '');
 
-watch([kategori, sort], () => apply());
+watch([kategori, sort, toko], () => apply());
 
 function apply() {
     router.get(route('shop.index'), {
         q: q.value || undefined,
         kategori: kategori.value || undefined,
+        toko: toko.value || undefined,
         sort: sort.value || undefined,
         min: min.value || undefined,
         max: max.value || undefined,
@@ -49,11 +52,15 @@ function apply() {
         </section>
 
         <section class="container-editorial py-10">
-            <form class="mb-8 grid gap-3 rounded-2xl border border-[var(--line)] bg-white/80 p-4 shadow-soft sm:grid-cols-2 lg:grid-cols-6" @submit.prevent="apply">
+            <form class="mb-8 grid gap-3 rounded-2xl border border-[var(--line)] bg-white/80 p-4 shadow-soft sm:grid-cols-2 lg:grid-cols-7" @submit.prevent="apply">
                 <input v-model="q" type="search" :placeholder="t('shop_search')" class="rounded-xl border-black/10 sm:col-span-2" />
                 <select v-model="kategori" class="rounded-xl border-black/10">
                     <option value="">{{ t('shop_all_categories') }}</option>
                     <option v-for="cat in categories" :key="cat.id" :value="cat.slug">{{ cat.name }}</option>
+                </select>
+                <select v-model="toko" class="rounded-xl border-black/10">
+                    <option value="">{{ t('shop_all_stores') }}</option>
+                    <option v-for="store in stores" :key="store.id" :value="store.slug">{{ store.name }}</option>
                 </select>
                 <select v-model="sort" class="rounded-xl border-black/10">
                     <option value="newest">{{ t('shop_sort_newest') }}</option>

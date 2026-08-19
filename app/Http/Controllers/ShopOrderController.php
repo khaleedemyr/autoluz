@@ -17,7 +17,7 @@ class ShopOrderController extends Controller
     {
         $orders = $request->user()
             ->orders()
-            ->with('items')
+            ->with(['items', 'store', 'checkout'])
             ->orderByDesc('id')
             ->paginate(10)
             ->withQueryString()
@@ -31,7 +31,7 @@ class ShopOrderController extends Controller
     public function show(Request $request, Order $order, MidtransService $midtrans): Response
     {
         abort_unless($order->user_id === $request->user()->id, 403);
-        $order->load('items');
+        $order->load(['items', 'store', 'checkout']);
 
         return Inertia::render('Shop/Orders/Show', [
             'order' => $order->toArrayPublic(),

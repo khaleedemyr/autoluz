@@ -13,6 +13,8 @@ class AdminPermissions
         'vehicles' => 'Kendaraan',
         'products' => 'Produk Toko',
         'orders' => 'Pesanan Toko',
+        'stores' => 'Toko Partner',
+        'stores' => 'Toko Partner',
         'newsletter' => 'Newsletter',
         'categories' => 'Kategori',
         'comments' => 'Komentar',
@@ -56,6 +58,14 @@ class AdminPermissions
             || str_starts_with($name, 'admin.shop-settings.')
         ) {
             return 'products';
+        }
+
+        if (str_starts_with($name, 'admin.stores.')) {
+            return 'stores';
+        }
+
+        if (str_starts_with($name, 'admin.stores.')) {
+            return 'stores';
         }
 
         foreach (self::keys() as $key) {

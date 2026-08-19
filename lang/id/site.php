@@ -428,4 +428,12 @@ return [
     'shop_orders_empty' => 'Belum ada pesanan.',
     'shop_items' => 'Item',
     'shop_tracking' => 'Resi',
+    'shop_official' => 'Official',
+    'shop_partner' => 'Toko partner',
+    'shop_all_stores' => 'Semua toko',
+    'shop_unknown_store' => 'Toko tidak tersedia',
+    'shop_store_origin_missing' => 'Salah satu toko belum mengatur kota asal pengiriman. Hapus item toko itu atau tunggu seller melengkapi pengaturan.',
+    'shop_split_hint' => 'Ongkir dihitung terpisah per toko. Satu pembayaran untuk semua.',
+    'shop_parent_checkout' => 'Pembayaran gabungan',
+    'shop_seller_dash' => 'Dashboard Toko',
 ];

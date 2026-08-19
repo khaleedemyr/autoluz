@@ -281,6 +281,14 @@ onUnmounted(() => {
                                     {{ t('shop_orders') }}
                                 </Link>
                                 <Link
+                                    v-if="authUser.is_seller"
+                                    :href="route('seller.dashboard')"
+                                    class="block px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-brand hover:bg-mist"
+                                    @click="closeAccount"
+                                >
+                                    {{ t('shop_seller_dash') }}
+                                </Link>
+                                <Link
                                     v-if="authUser.is_admin"
                                     :href="route('admin.dashboard')"
                                     class="block px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-brand hover:bg-mist"
@@ -600,6 +608,14 @@ onUnmounted(() => {
                         @click="mobileOpen = false"
                     >
                         {{ authUser.name }}
+                    </Link>
+                    <Link
+                        v-if="authUser.is_seller"
+                        :href="route('seller.dashboard')"
+                        class="rounded-lg px-2 py-3 text-sm font-semibold uppercase tracking-[0.14em] text-brand"
+                        @click="mobileOpen = false"
+                    >
+                        {{ t('shop_seller_dash') }}
                     </Link>
                     <Link
                         v-if="authUser.is_admin"

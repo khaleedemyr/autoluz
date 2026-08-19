@@ -64,6 +64,7 @@ function addToCart() {
         <section class="container-editorial py-8 lg:py-14">
             <p class="mb-6 text-[11px] font-semibold uppercase tracking-[0.16em] text-neutral-400">
                 <Link :href="route('shop.index')" class="hover:text-brand">{{ t('shop_nav') }}</Link>
+                <span v-if="product.store"> · <Link :href="product.store.url" class="hover:text-brand">{{ product.store.name }}</Link></span>
                 <span v-if="product.category"> · {{ product.category.name }}</span>
             </p>
 

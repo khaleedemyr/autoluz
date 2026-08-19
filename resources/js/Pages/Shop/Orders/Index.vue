@@ -29,7 +29,7 @@ const { t } = useI18n();
                 >
                     <div class="flex flex-wrap items-start justify-between gap-3">
                         <div>
-                            <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-neutral-400">{{ order.number }}</p>
+                            <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-neutral-400">{{ order.store?.name ? order.store.name + ' · ' : '' }}{{ order.number }}</p>
                             <p class="mt-1 font-display text-2xl">{{ order.grand_total_label }}</p>
                             <p class="mt-1 text-sm text-neutral-500">{{ order.courier }} {{ order.courier_service }}</p>
                         </div>
