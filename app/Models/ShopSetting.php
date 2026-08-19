@@ -14,6 +14,8 @@ class ShopSetting extends Model
         'origin_province_name',
         'origin_city_id',
         'origin_city_name',
+        'origin_district_id',
+        'origin_district_name',
         'couriers',
     ];
 
@@ -59,6 +61,8 @@ class ShopSetting extends Model
             'origin_province_name' => $this->origin_province_name,
             'origin_city_id' => $this->origin_city_id,
             'origin_city_name' => $this->origin_city_name,
+            'origin_district_id' => $this->origin_district_id,
+            'origin_district_name' => $this->origin_district_name,
             'couriers' => $this->courierList(),
             'origin_ready' => filled($this->origin_city_id),
         ];

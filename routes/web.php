@@ -125,6 +125,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/toko/checkout/kota', [CheckoutController::class, 'cities'])
         ->middleware('throttle:60,1')
         ->name('shop.checkout.cities');
+    Route::get('/toko/checkout/kecamatan', [CheckoutController::class, 'districts'])
+        ->middleware('throttle:60,1')
+        ->name('shop.checkout.districts');
     Route::post('/toko/checkout/ongkir', [CheckoutController::class, 'quote'])
         ->middleware('throttle:30,1')
         ->name('shop.checkout.quote');
@@ -337,6 +340,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
 
     Route::get('/shop-settings', [AdminShopSettingController::class, 'edit'])->name('shop-settings.edit');
     Route::get('/shop-settings/cities', [AdminShopSettingController::class, 'cities'])->name('shop-settings.cities');
+    Route::get('/shop-settings/districts', [AdminShopSettingController::class, 'districts'])->name('shop-settings.districts');
     Route::put('/shop-settings', [AdminShopSettingController::class, 'update'])->name('shop-settings.update');
 
     Route::get('/stores', [AdminStoreController::class, 'index'])->name('stores.index');
@@ -374,6 +378,7 @@ Route::middleware(['auth', 'seller'])->prefix('seller')->name('seller.')->group(
     Route::put('/orders/{order}', [SellerOrderController::class, 'update'])->name('orders.update');
     Route::get('/settings', [SellerStoreSettingController::class, 'edit'])->name('settings.edit');
     Route::get('/settings/cities', [SellerStoreSettingController::class, 'cities'])->name('settings.cities');
+    Route::get('/settings/districts', [SellerStoreSettingController::class, 'districts'])->name('settings.districts');
     Route::put('/settings', [SellerStoreSettingController::class, 'update'])->name('settings.update');
 });
 

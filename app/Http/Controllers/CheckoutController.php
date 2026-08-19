@@ -82,12 +82,32 @@ class CheckoutController extends Controller
         }
     }
 
+    public function districts(Request $request): JsonResponse
+    {
+        $cityId = trim((string) $request->query('city_id', ''));
+        if ($cityId === '') {
+            return response()->json(['data' => []]);
+        }
+
+        try {
+            return response()->json(['data' => $this->rajaongkir->districts($cityId)]);
+        } catch (RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage(), 'data' => []], 422);
+        }
+    }
+
     public function quote(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'city_id' => ['required', 'string', 'max:20'],
+            'city_id' => ['nullable', 'string', 'max:20'],
+            'district_id' => ['nullable', 'string', 'max:20'],
             'store_id' => ['nullable', 'integer'],
         ]);
+
+        $destinationId = trim((string) ($data['district_id'] ?? $data['city_id'] ?? ''));
+        if ($destinationId === '') {
+            return response()->json(['message' => 'Pilih kota atau kecamatan tujuan.', 'data' => []], 422);
+        }
 
         $cart = $this->carts->current($request->user(), $request);
         $summary = $this->carts->summary($cart);
@@ -120,10 +140,10 @@ class CheckoutController extends Controller
 
             try {
                 $row['options'] = $this->rajaongkir->costs(
-                    $data['city_id'],
+                    $destinationId,
                     max(1, (int) $group['weight_grams']),
                     $store->courierList(),
-                    $store->origin_city_id,
+                    $store->originDestinationId() ?: $store->origin_city_id,
                 );
                 if ($row['options'] === []) {
                     $row['error'] = 'Tidak ada opsi ongkir dari toko ini.';
@@ -149,6 +169,8 @@ class CheckoutController extends Controller
             'province_name' => ['required_without:address_id', 'nullable', 'string', 'max:120'],
             'city_id' => ['required_without:address_id', 'nullable', 'string', 'max:20'],
             'city_name' => ['required_without:address_id', 'nullable', 'string', 'max:120'],
+            'district_id' => ['nullable', 'string', 'max:20'],
+            'district_name' => ['nullable', 'string', 'max:120'],
             'postal_code' => ['nullable', 'string', 'max:12'],
             'save_address' => ['boolean'],
             'shippings' => ['required', 'array', 'min:1'],
@@ -166,7 +188,7 @@ class CheckoutController extends Controller
 
         $cart = $this->carts->current($user, $request);
         $summary = $this->carts->summary($cart);
-        $this->assertShippings($address->city_id, $summary['groups'], $data['shippings']);
+        $this->assertShippings($address->destinationId(), $summary['groups'], $data['shippings']);
 
         try {
             $checkout = $this->orders->checkout($user, $cart, $address, $data['shippings'], $data['notes'] ?? null);
@@ -199,6 +221,8 @@ class CheckoutController extends Controller
             'province_name' => $data['province_name'],
             'city_id' => $data['city_id'],
             'city_name' => $data['city_name'],
+            'district_id' => $data['district_id'] ?? null,
+            'district_name' => $data['district_name'] ?? null,
             'postal_code' => $data['postal_code'] ?? null,
         ]);
 

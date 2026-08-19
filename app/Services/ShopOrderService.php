@@ -115,6 +115,8 @@ class ShopOrderService
                     'province_name' => $address->province_name,
                     'city_id' => $address->city_id,
                     'city_name' => $address->city_name,
+                    'district_id' => $address->district_id,
+                    'district_name' => $address->district_name,
                     'postal_code' => $address->postal_code,
                     'notes' => $notes,
                 ]);
@@ -295,7 +297,7 @@ class ShopOrderService
                 $cityId,
                 max(1, $weight),
                 $store->courierList(),
-                $store->origin_city_id,
+                    $store->originDestinationId() ?: $store->origin_city_id,
             );
         } catch (RuntimeException) {
             return false;

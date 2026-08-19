@@ -28,6 +28,8 @@ class Store extends Model
         'origin_province_name',
         'origin_city_id',
         'origin_city_name',
+        'origin_district_id',
+        'origin_district_name',
         'couriers',
         'status',
         'is_official',
@@ -69,6 +71,13 @@ class Store extends Model
     public function originReady(): bool
     {
         return filled($this->origin_city_id);
+    }
+
+    public function originDestinationId(): ?string
+    {
+        $id = $this->origin_district_id ?: $this->origin_city_id;
+
+        return filled($id) ? (string) $id : null;
     }
 
     /**
@@ -131,6 +140,9 @@ class Store extends Model
             'origin_province_id' => $this->origin_province_id,
             'origin_province_name' => $this->origin_province_name,
             'origin_city_id' => $this->origin_city_id,
+            'origin_city_name' => $this->origin_city_name,
+            'origin_district_id' => $this->origin_district_id,
+            'origin_district_name' => $this->origin_district_name,
             'couriers' => $this->courierList(),
             'status' => $this->status,
             'status_label' => $this->statusLabel(),

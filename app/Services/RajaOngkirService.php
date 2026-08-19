@@ -19,17 +19,8 @@ class RajaOngkirService
      */
     public function provinces(): array
     {
-        return Cache::remember('shop.rajaongkir.provinces', 86400, function () {
-            $payload = $this->get('/destination/province');
-
-            return collect($this->rows($payload))
-                ->map(fn ($row) => [
-                    'id' => (string) ($row['id'] ?? $row['province_id'] ?? ''),
-                    'name' => (string) ($row['name'] ?? $row['province'] ?? ''),
-                ])
-                ->filter(fn ($row) => $row['id'] !== '' && $row['name'] !== '')
-                ->values()
-                ->all();
+        return Cache::remember('shop.rajaongkir.v3.provinces', 86400, function () {
+            return $this->mapPlaces($this->pagedRows('/destination/province'));
         });
     }
 
@@ -38,18 +29,25 @@ class RajaOngkirService
      */
     public function cities(string $provinceId): array
     {
-        return Cache::remember('shop.rajaongkir.cities.'.$provinceId, 86400, function () use ($provinceId) {
-            $payload = $this->get('/destination/city/'.$provinceId);
+        return Cache::remember('shop.rajaongkir.v3.cities.'.$provinceId, 86400, function () use ($provinceId) {
+            return $this->mapPlaces(
+                $this->pagedRows('/destination/city/'.$provinceId),
+                withPostal: true,
+                withType: true,
+            );
+        });
+    }
 
-            return collect($this->rows($payload))
-                ->map(fn ($row) => [
-                    'id' => (string) ($row['id'] ?? $row['city_id'] ?? ''),
-                    'name' => trim(((string) ($row['type'] ?? '')).' '.((string) ($row['name'] ?? $row['city_name'] ?? ''))),
-                    'postal_code' => $row['zip_code'] ?? $row['postal_code'] ?? null,
-                ])
-                ->filter(fn ($row) => $row['id'] !== '' && trim($row['name']) !== '')
-                ->values()
-                ->all();
+    /**
+     * @return list<array{id: string, name: string, postal_code: string|null}>
+     */
+    public function districts(string $cityId): array
+    {
+        return Cache::remember('shop.rajaongkir.v3.districts.'.$cityId, 86400, function () use ($cityId) {
+            return $this->mapPlaces(
+                $this->pagedRows('/destination/district/'.$cityId),
+                withPostal: true,
+            );
         });
     }
 
@@ -57,14 +55,14 @@ class RajaOngkirService
      * @param  list<string>|null  $couriers
      * @return list<array{courier: string, service: string, description: string, cost: int, etd: string, label: string}>
      */
-    public function costs(string $destinationCityId, int $weightGrams, ?array $couriers = null, ?string $originCityId = null): array
+    public function costs(string $destinationId, int $weightGrams, ?array $couriers = null, ?string $originId = null): array
     {
         if (! $this->configured()) {
             throw new RuntimeException('RajaOngkir belum dikonfigurasi.');
         }
 
         $settings = ShopSetting::current();
-        $origin = $originCityId ?: $settings->origin_city_id;
+        $origin = $originId ?: $settings->origin_district_id ?: $settings->origin_city_id;
         if (! $origin) {
             throw new RuntimeException('Kota asal pengiriman belum diatur.');
         }
@@ -77,7 +75,7 @@ class RajaOngkirService
             try {
                 $payload = $this->post('/calculate/domestic-cost', [
                     'origin' => $origin,
-                    'destination' => $destinationCityId,
+                    'destination' => $destinationId,
                     'weight' => $weight,
                     'courier' => strtolower((string) $courier),
                     'price' => 'lowest',
@@ -114,14 +112,93 @@ class RajaOngkirService
     }
 
     /**
+     * @return list<array<string, mixed>>
+     */
+    private function pagedRows(string $path): array
+    {
+        $all = [];
+        $seen = [];
+        $limit = 100;
+        $offset = 0;
+
+        for ($page = 0; $page < 40; $page++) {
+            $payload = $this->get($path, [
+                'limit' => $limit,
+                'offset' => $offset,
+                'page' => $page + 1,
+            ]);
+            $chunk = $this->rows($payload);
+            if ($chunk === []) {
+                break;
+            }
+
+            $added = 0;
+            foreach ($chunk as $row) {
+                $id = (string) ($row['id'] ?? $row['city_id'] ?? $row['province_id'] ?? $row['district_id'] ?? '');
+                $key = $id !== '' ? $id : md5(json_encode($row));
+                if (isset($seen[$key])) {
+                    continue;
+                }
+                $seen[$key] = true;
+                $all[] = $row;
+                $added++;
+            }
+
+            $total = (int) (data_get($payload, 'meta.total') ?: data_get($payload, 'data.total') ?: 0);
+            if ($added === 0 || count($chunk) < $limit || ($total > 0 && count($all) >= $total)) {
+                break;
+            }
+
+            $offset += $limit;
+        }
+
+        return $all;
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $rows
+     * @return list<array{id: string, name: string, postal_code?: string|null}>
+     */
+    private function mapPlaces(array $rows, bool $withPostal = false, bool $withType = false): array
+    {
+        $mapped = collect($rows)
+            ->map(function ($row) use ($withPostal, $withType) {
+                $name = trim((string) ($row['name'] ?? $row['city_name'] ?? $row['province'] ?? $row['district'] ?? ''));
+                if ($withType) {
+                    $type = trim((string) ($row['type'] ?? ''));
+                    if ($type !== '' && ! str_starts_with(mb_strtoupper($name), mb_strtoupper($type))) {
+                        $name = trim($type.' '.$name);
+                    }
+                }
+
+                $item = [
+                    'id' => (string) ($row['id'] ?? $row['city_id'] ?? $row['province_id'] ?? $row['district_id'] ?? ''),
+                    'name' => $name,
+                ];
+                if ($withPostal) {
+                    $item['postal_code'] = $row['zip_code'] ?? $row['postal_code'] ?? null;
+                }
+
+                return $item;
+            })
+            ->filter(fn ($row) => $row['id'] !== '' && $row['name'] !== '')
+            ->unique('id')
+            ->sortBy(fn ($row) => mb_strtoupper($row['name']), SORT_NATURAL)
+            ->values()
+            ->all();
+
+        return $mapped;
+    }
+
+    /**
      * @return array<string, mixed>
      */
-    private function get(string $path): array
+    private function get(string $path, array $query = []): array
     {
         $response = Http::timeout(20)
             ->withHeaders(['key' => config('shop.rajaongkir.api_key')])
             ->acceptJson()
-            ->get(config('shop.rajaongkir.base_url').$path);
+            ->get(config('shop.rajaongkir.base_url').$path, $query);
 
         if (! $response->successful()) {
             throw new RuntimeException('Gagal memuat data RajaOngkir.');
@@ -157,6 +234,19 @@ class RajaOngkirService
     {
         $data = $payload['data'] ?? $payload['rajaongkir']['results'] ?? $payload['results'] ?? [];
 
-        return is_array($data) ? array_values($data) : [];
+        if (is_array($data) && isset($data['data']) && is_array($data['data'])) {
+            $data = $data['data'];
+        }
+
+        if (! is_array($data)) {
+            return [];
+        }
+
+        $values = array_values($data);
+        if ($values === [] || ! is_array($values[0] ?? null)) {
+            return [];
+        }
+
+        return $values;
     }
 }

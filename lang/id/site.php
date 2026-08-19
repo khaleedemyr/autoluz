@@ -441,6 +441,7 @@ return [
     'shop_street' => 'Alamat lengkap',
     'shop_province' => 'Provinsi',
     'shop_city' => 'Kota / Kabupaten',
+    'shop_district' => 'Kecamatan',
     'shop_postal' => 'Kode pos',
     'shop_save_address' => 'Simpan alamat untuk berikutnya',
     'shop_shipping' => 'Pengiriman',

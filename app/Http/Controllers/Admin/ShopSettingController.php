@@ -19,6 +19,7 @@ class ShopSettingController extends Controller
         $settings = ShopSetting::current();
         $provinces = [];
         $cities = [];
+        $districts = [];
         $error = null;
 
         try {
@@ -26,6 +27,9 @@ class ShopSettingController extends Controller
                 $provinces = $rajaongkir->provinces();
                 if ($settings->origin_province_id) {
                     $cities = $rajaongkir->cities($settings->origin_province_id);
+                }
+                if ($settings->origin_city_id) {
+                    $districts = $rajaongkir->districts($settings->origin_city_id);
                 }
             } else {
                 $error = 'RAJAONGKIR_API_KEY belum diisi di .env.';
@@ -59,6 +63,7 @@ class ShopSettingController extends Controller
             'stores' => $stores,
             'provinces' => $provinces,
             'cities' => $cities,
+            'districts' => $districts,
             'courierOptions' => Store::courierOptions(),
             'rajaongkir_error' => $error,
             'rajaongkir_configured' => $rajaongkir->configured(),
@@ -80,6 +85,20 @@ class ShopSettingController extends Controller
         }
     }
 
+    public function districts(Request $request, RajaOngkirService $rajaongkir): \Illuminate\Http\JsonResponse
+    {
+        $cityId = trim((string) $request->query('city_id', ''));
+        if ($cityId === '') {
+            return response()->json(['data' => []]);
+        }
+
+        try {
+            return response()->json(['data' => $rajaongkir->districts($cityId)]);
+        } catch (RuntimeException $e) {
+            return response()->json(['data' => [], 'error' => $e->getMessage()], 422);
+        }
+    }
+
     public function update(Request $request): RedirectResponse
     {
         $data = $request->validate([
@@ -90,6 +109,8 @@ class ShopSettingController extends Controller
             'origin_province_name' => ['nullable', 'string', 'max:120'],
             'origin_city_id' => ['nullable', 'string', 'max:20'],
             'origin_city_name' => ['nullable', 'string', 'max:120'],
+            'origin_district_id' => ['nullable', 'string', 'max:20'],
+            'origin_district_name' => ['nullable', 'string', 'max:120'],
             'couriers' => ['required', 'array', 'min:1'],
             'couriers.*' => ['string', 'max:20'],
         ]);
@@ -106,6 +127,8 @@ class ShopSettingController extends Controller
                 'origin_province_name' => $data['origin_province_name'] ?? null,
                 'origin_city_id' => $data['origin_city_id'] ?? null,
                 'origin_city_name' => $data['origin_city_name'] ?? null,
+                'origin_district_id' => $data['origin_district_id'] ?? null,
+                'origin_district_name' => $data['origin_district_name'] ?? null,
                 'couriers' => $data['couriers'],
             ]);
         }

@@ -17,6 +17,8 @@ class UserAddress extends Model
         'province_name',
         'city_id',
         'city_name',
+        'district_id',
+        'district_name',
         'postal_code',
         'is_default',
     ];
@@ -45,9 +47,16 @@ class UserAddress extends Model
             'province_name' => $this->province_name,
             'city_id' => $this->city_id,
             'city_name' => $this->city_name,
+            'district_id' => $this->district_id,
+            'district_name' => $this->district_name,
             'postal_code' => $this->postal_code,
             'is_default' => $this->is_default,
-            'summary' => trim($this->address.', '.$this->city_name.', '.$this->province_name),
+            'summary' => trim($this->address.', '.collect([$this->district_name, $this->city_name, $this->province_name])->filter()->implode(', ')),
         ];
+    }
+
+    public function destinationId(): string
+    {
+        return (string) ($this->district_id ?: $this->city_id);
     }
 }

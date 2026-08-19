@@ -16,6 +16,7 @@ const props = defineProps({
 
 const { t } = useI18n();
 const cities = ref([]);
+const districts = ref([]);
 const quoting = ref(false);
 const useNew = ref(!props.addresses.length);
 const quotesByStore = reactive({});
@@ -30,6 +31,8 @@ const form = useForm({
     province_name: '',
     city_id: '',
     city_name: '',
+    district_id: '',
+    district_name: '',
     postal_code: '',
     save_address: true,
     shippings: [],
@@ -37,7 +40,7 @@ const form = useForm({
 });
 
 const selectedAddress = computed(() => props.addresses.find((row) => Number(row.id) === Number(form.address_id)));
-const destCityId = computed(() => (useNew.value ? form.city_id : selectedAddress.value?.city_id));
+const destCityId = computed(() => (useNew.value ? (form.district_id || form.city_id) : (selectedAddress.value?.district_id || selectedAddress.value?.city_id)));
 const groups = computed(() => props.cart.groups || []);
 const shippingTotal = computed(() => Object.values(selectedByStore).reduce((sum, row) => sum + Number(row?.cost || 0), 0));
 const grand = computed(() => Number(props.cart.subtotal || 0) + shippingTotal.value);
@@ -50,6 +53,9 @@ watch(() => form.province_id, async (id) => {
     form.province_name = province?.name || '';
     form.city_id = '';
     form.city_name = '';
+    form.district_id = '';
+    form.district_name = '';
+    districts.value = [];
     resetQuotes();
     if (!id) {
         cities.value = [];
@@ -59,10 +65,27 @@ watch(() => form.province_id, async (id) => {
     cities.value = data.data || [];
 });
 
-watch(() => form.city_id, (id) => {
+watch(() => form.city_id, async (id) => {
     const city = cities.value.find((row) => String(row.id) === String(id));
     form.city_name = city?.name || '';
     form.postal_code = city?.postal_code || form.postal_code;
+    form.district_id = '';
+    form.district_name = '';
+    resetQuotes();
+    if (!id) {
+        districts.value = [];
+        return;
+    }
+    const { data } = await axios.get(route('shop.checkout.districts'), { params: { city_id: id } });
+    districts.value = data.data || [];
+});
+
+watch(() => form.district_id, (id) => {
+    const district = districts.value.find((row) => String(row.id) === String(id));
+    form.district_name = district?.name || '';
+    if (district?.postal_code) {
+        form.postal_code = district.postal_code;
+    }
 });
 
 watch([destCityId, useNew, () => form.address_id], () => {
@@ -81,7 +104,10 @@ async function loadQuotes() {
     }
     quoting.value = true;
     try {
-        const { data } = await axios.post(route('shop.checkout.quote'), { city_id: destCityId.value });
+        const { data } = await axios.post(route('shop.checkout.quote'), {
+            city_id: useNew.value ? form.city_id : selectedAddress.value?.city_id,
+            district_id: useNew.value ? form.district_id : selectedAddress.value?.district_id,
+        });
         (data.data || []).forEach((row) => {
             quotesByStore[row.store_id] = row;
             delete selectedByStore[row.store_id];
@@ -152,7 +178,7 @@ function submit() {
                             <input v-model="form.recipient_name" type="text" :placeholder="t('shop_recipient')" class="rounded-xl border-black/10" :required="useNew" />
                             <input v-model="form.phone" type="text" :placeholder="t('shop_phone')" class="rounded-xl border-black/10" :required="useNew" />
                             <textarea v-model="form.address" rows="3" :placeholder="t('shop_street')" class="rounded-xl border-black/10" :required="useNew" />
-                            <div class="grid gap-3 sm:grid-cols-2">
+                            <div class="grid gap-3 sm:grid-cols-3">
                                 <select v-model="form.province_id" class="rounded-xl border-black/10" :required="useNew">
                                     <option value="">{{ t('shop_province') }}</option>
                                     <option v-for="row in provinces" :key="row.id" :value="row.id">{{ row.name }}</option>
@@ -160,6 +186,10 @@ function submit() {
                                 <select v-model="form.city_id" class="rounded-xl border-black/10" :required="useNew">
                                     <option value="">{{ t('shop_city') }}</option>
                                     <option v-for="row in cities" :key="row.id" :value="row.id">{{ row.name }}</option>
+                                </select>
+                                <select v-model="form.district_id" class="rounded-xl border-black/10" :required="useNew && districts.length > 0">
+                                    <option value="">{{ t('shop_district') }}</option>
+                                    <option v-for="row in districts" :key="row.id" :value="row.id">{{ row.name }}</option>
                                 </select>
                             </div>
                             <input v-model="form.postal_code" type="text" :placeholder="t('shop_postal')" class="rounded-xl border-black/10" />

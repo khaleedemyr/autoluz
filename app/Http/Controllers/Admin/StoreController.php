@@ -59,6 +59,7 @@ class StoreController extends Controller
             'users' => $this->userOptions(),
             'provinces' => $this->provinces($rajaongkir),
             'cities' => [],
+            'districts' => [],
             'courierOptions' => Store::courierOptions(),
             'statuses' => $this->statusOptions(),
             'rajaongkir_error' => $this->rajaongkirError($rajaongkir),
@@ -83,11 +84,19 @@ class StoreController extends Controller
     {
         $store->load('owner:id,name,email');
         $cities = [];
+        $districts = [];
         if ($store->origin_province_id && $rajaongkir->configured()) {
             try {
                 $cities = $rajaongkir->cities($store->origin_province_id);
             } catch (RuntimeException) {
                 $cities = [];
+            }
+        }
+        if ($store->origin_city_id && $rajaongkir->configured()) {
+            try {
+                $districts = $rajaongkir->districts($store->origin_city_id);
+            } catch (RuntimeException) {
+                $districts = [];
             }
         }
 
@@ -96,6 +105,7 @@ class StoreController extends Controller
             'users' => $this->userOptions($store->user_id),
             'provinces' => $this->provinces($rajaongkir),
             'cities' => $cities,
+            'districts' => $districts,
             'courierOptions' => Store::courierOptions(),
             'statuses' => $this->statusOptions(),
             'rajaongkir_error' => $this->rajaongkirError($rajaongkir),
@@ -155,6 +165,8 @@ class StoreController extends Controller
             'origin_province_name' => ['nullable', 'string', 'max:120'],
             'origin_city_id' => ['nullable', 'string', 'max:20'],
             'origin_city_name' => ['nullable', 'string', 'max:120'],
+            'origin_district_id' => ['nullable', 'string', 'max:20'],
+            'origin_district_name' => ['nullable', 'string', 'max:120'],
             'couriers' => ['nullable', 'array'],
             'couriers.*' => ['string', 'max:20'],
             'status' => ['required', Rule::in([Store::STATUS_PENDING, Store::STATUS_APPROVED, Store::STATUS_SUSPENDED])],
@@ -181,6 +193,8 @@ class StoreController extends Controller
             'origin_province_name' => $data['origin_province_name'] ?? null,
             'origin_city_id' => $data['origin_city_id'] ?? null,
             'origin_city_name' => $data['origin_city_name'] ?? null,
+            'origin_district_id' => $data['origin_district_id'] ?? null,
+            'origin_district_name' => $data['origin_district_name'] ?? null,
             'couriers' => array_values($data['couriers'] ?? []),
             'status' => $data['status'],
         ];

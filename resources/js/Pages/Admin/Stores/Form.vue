@@ -10,6 +10,7 @@ const props = defineProps({
     users: { type: Array, default: () => [] },
     provinces: { type: Array, default: () => [] },
     cities: { type: Array, default: () => [] },
+    districts: { type: Array, default: () => [] },
     courierOptions: { type: Array, default: () => [] },
     statuses: { type: Array, default: () => [] },
     rajaongkir_error: { type: String, default: null },
@@ -18,6 +19,7 @@ const props = defineProps({
 const isEdit = computed(() => !!props.store?.id);
 const slugManual = ref(!!props.store?.slug);
 const cityOptions = ref([...(props.cities || [])]);
+const districtOptions = ref([...(props.districts || [])]);
 const logoPreview = ref(props.store?.logo_url || null);
 
 const form = useForm({
@@ -32,6 +34,8 @@ const form = useForm({
     origin_province_name: props.store?.origin_province_name || '',
     origin_city_id: props.store?.origin_city_id || '',
     origin_city_name: props.store?.origin_city_name || '',
+    origin_district_id: props.store?.origin_district_id || '',
+    origin_district_name: props.store?.origin_district_name || '',
     couriers: [...(props.store?.couriers || [])],
     status: props.store?.status || 'pending',
     is_official: !!props.store?.is_official,
@@ -48,6 +52,9 @@ watch(() => form.origin_province_id, async (id) => {
     form.origin_province_name = province?.name || '';
     form.origin_city_id = '';
     form.origin_city_name = '';
+    form.origin_district_id = '';
+    form.origin_district_name = '';
+    districtOptions.value = [];
     if (!id) {
         cityOptions.value = [];
         return;
@@ -56,9 +63,22 @@ watch(() => form.origin_province_id, async (id) => {
     cityOptions.value = data.data || [];
 });
 
-watch(() => form.origin_city_id, (id) => {
+watch(() => form.origin_city_id, async (id) => {
     const city = cityOptions.value.find((row) => String(row.id) === String(id));
     form.origin_city_name = city?.name || form.origin_city_name;
+    form.origin_district_id = '';
+    form.origin_district_name = '';
+    if (!id) {
+        districtOptions.value = [];
+        return;
+    }
+    const { data } = await axios.get(route('admin.shop-settings.districts'), { params: { city_id: id } });
+    districtOptions.value = data.data || [];
+});
+
+watch(() => form.origin_district_id, (id) => {
+    const district = districtOptions.value.find((row) => String(row.id) === String(id));
+    form.origin_district_name = district?.name || form.origin_district_name;
 });
 
 function toggleCourier(value) {
@@ -110,14 +130,18 @@ function submit() {
             <input v-model="form.contact_phone" type="text" placeholder="Telepon" class="w-full rounded-xl border-black/10" />
             <textarea v-model="form.pickup_address" rows="3" placeholder="Alamat pickup" class="w-full rounded-xl border-black/10" />
 
-            <div class="grid gap-3 sm:grid-cols-2">
+            <div class="grid gap-3 sm:grid-cols-3">
                 <select v-model="form.origin_province_id" class="rounded-xl border-black/10">
                     <option value="">Provinsi asal</option>
                     <option v-for="row in provinces" :key="row.id" :value="row.id">{{ row.name }}</option>
                 </select>
                 <select v-model="form.origin_city_id" class="rounded-xl border-black/10">
-                    <option value="">Kota asal</option>
+                    <option value="">Kota / kabupaten</option>
                     <option v-for="row in cityOptions" :key="row.id" :value="row.id">{{ row.name }}</option>
+                </select>
+                <select v-model="form.origin_district_id" class="rounded-xl border-black/10">
+                    <option value="">Kecamatan</option>
+                    <option v-for="row in districtOptions" :key="row.id" :value="row.id">{{ row.name }}</option>
                 </select>
             </div>
 
