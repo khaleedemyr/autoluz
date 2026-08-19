@@ -16,7 +16,7 @@ class RabbitAndWheelsSeeder extends Seeder
 {
     /**
      * Demo partner store inspired by public Rabbit & Wheels catalog (Bandung riding apparel).
-     * Prices/names follow commonly listed models; not an official brand dump. Covers are original placeholders.
+     * Prices/names follow commonly listed models. Product photos are original generated catalog shots, not official brand photography.
      */
     public function run(): void
     {
@@ -38,7 +38,8 @@ class RabbitAndWheelsSeeder extends Seeder
         );
 
         $official = Store::official();
-        $logoPath = $this->writeSvg('stores/rabbit-and-wheels.svg', $this->logoSvg());
+        $logoPath = $this->publishAsset('rabbit-and-wheels-logo.jpg', 'stores/rabbit-and-wheels.jpg')
+            ?: $this->writeSvg('stores/rabbit-and-wheels.svg', $this->logoSvg());
 
         $store = Store::query()->updateOrCreate(
             ['slug' => 'rabbit-and-wheels'],
@@ -63,10 +64,11 @@ class RabbitAndWheelsSeeder extends Seeder
         $categories = $this->categories();
 
         foreach ($this->catalog() as $index => $item) {
-            $cover = $this->writeSvg(
-                'products/rabbit-and-wheels/'.$item['slug'].'.svg',
-                $this->productSvg($item['name'], $item['accent'])
-            );
+            $cover = $this->publishAsset($item['slug'].'.jpg', 'products/rabbit-and-wheels/'.$item['slug'].'.jpg')
+                ?: $this->writeSvg(
+                    'products/rabbit-and-wheels/'.$item['slug'].'.svg',
+                    $this->productSvg($item['name'], $item['accent'])
+                );
 
             $product = Product::query()->updateOrCreate(
                 ['slug' => $item['slug']],
@@ -105,6 +107,15 @@ class RabbitAndWheelsSeeder extends Seeder
             }
 
             $product->variants()->whereNotIn('sku', $keepSkus)->delete();
+
+            if ($cover && str_ends_with($cover, '.jpg')) {
+                $product->images()->delete();
+                $product->images()->create([
+                    'image_url' => $cover,
+                    'caption' => $item['name'],
+                    'sort_order' => 1,
+                ]);
+            }
         }
 
         $this->command?->info('Rabbit & Wheels seeded. Login seller: seller.rabbit@autoluz.local / password');
@@ -426,6 +437,18 @@ class RabbitAndWheelsSeeder extends Seeder
         }
 
         return $rows;
+    }
+
+    private function publishAsset(string $filename, string $storagePath): ?string
+    {
+        $source = database_path('seeders/assets/rabbit-and-wheels/'.$filename);
+        if (! is_file($source)) {
+            return null;
+        }
+
+        Storage::disk('public')->put($storagePath, file_get_contents($source));
+
+        return '/storage/'.$storagePath;
     }
 
     private function writeSvg(string $path, string $svg): string

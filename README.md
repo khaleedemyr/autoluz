@@ -113,7 +113,7 @@ php artisan youtube:sync
 php artisan db:seed --class=RabbitAndWheelsSeeder
 ```
 
-Demo partner store **Rabbit & Wheels** (apparel riding Bandung): 19 produk (jaket MSP, hoodie, kaos, tas, aksesoris), akun seller `seller.rabbit@autoluz.local` / `password`. Etalase: `/toko/m/rabbit-and-wheels`.
+Demo partner store **Rabbit & Wheels** (apparel riding Bandung): 19 produk + foto katalog, akun seller `seller.rabbit@autoluz.local` / `password`. Etalase: `/toko/m/rabbit-and-wheels`.
 
 WordPress DB fills articles/categories. YouTube channel `apih mototv` fills the video stage.
 
@@ -151,8 +151,10 @@ cp -a ~/domains/autoluz.id/app/public/build ~/domains/autoluz.id/public_html/bui
 
 cd ~/domains/autoluz.id/app
 git pull origin main
-php artisan migrate --force
+php artisan db:seed --class=RabbitAndWheelsSeeder
 php artisan optimize:clear
 php artisan optimize
 rm -rf ~/domains/autoluz.id/public_html/build
 cp -a ~/domains/autoluz.id/app/public/build ~/domains/autoluz.id/public_html/build
+
+php artisan migrate --force
