@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
+use App\Support\ShopSchema;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -29,6 +30,8 @@ class AppServiceProvider extends ServiceProvider
         }
 
         Vite::prefetch(concurrency: 3);
+
+        ShopSchema::ensure();
 
         // Named limiters keep separate counters (numeric throttle:10,1 shares one key per user).
         RateLimiter::for('community-search', function (Request $request) {

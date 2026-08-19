@@ -48,7 +48,7 @@ onUnmounted(() => document.removeEventListener('click', onDocClick));
     <div ref="root" class="relative">
         <button
             type="button"
-            class="relative inline-flex h-10 w-10 items-center justify-center rounded-full text-white/75 transition hover:bg-white/10 hover:text-white"
+            class="relative inline-flex h-9 w-9 items-center justify-center rounded-full text-white/70 transition hover:bg-white/10 hover:text-white"
             :aria-label="t('community_notifications')"
             @click.stop="toggle"
         >

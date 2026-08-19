@@ -2,7 +2,8 @@
 
 return [
     'home' => 'Beranda',
-    'see_more' => 'Lihat Lainnya',
+    'see_more' => 'Lainnya',
+    'news_nav' => 'Berita',
     'search' => 'Cari',
     'search_placeholder' => 'Cari berita Autoluz...',
     'search_title' => 'Cari Berita',

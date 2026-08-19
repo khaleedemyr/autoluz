@@ -5,6 +5,7 @@ import { useI18n } from '@/composables/useI18n';
 
 const props = defineProps({
     item: { type: Object, required: true },
+    bare: { type: Boolean, default: false },
 });
 
 const emit = defineEmits(['navigate']);
@@ -49,7 +50,7 @@ function next() {
 </script>
 
 <template>
-    <div class="border-b border-[var(--line)] bg-white text-charcoal shadow-lift">
+    <div :class="bare ? '' : 'border-b border-[var(--line)] bg-white text-charcoal shadow-lift'">
         <div class="container-editorial grid lg:grid-cols-[12rem_minmax(0,1fr)]">
             <aside class="border-b border-[var(--line)] bg-mist lg:border-b-0 lg:border-r lg:border-[var(--line)]">
                 <nav class="flex gap-1 overflow-x-auto px-3 py-4 lg:flex-col lg:overflow-visible lg:py-6 lg:pl-1 lg:pr-4">

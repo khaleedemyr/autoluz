@@ -11,7 +11,7 @@ const count = computed(() => Number(page.props.cart?.count || 0));
 <template>
     <Link
         :href="route('shop.cart')"
-        class="relative inline-flex h-10 w-10 items-center justify-center rounded-full text-white/75 transition hover:bg-white/10 hover:text-white"
+        class="relative inline-flex h-9 w-9 items-center justify-center rounded-full text-white/70 transition hover:bg-white/10 hover:text-white"
         :aria-label="t('shop_cart')"
     >
         <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">

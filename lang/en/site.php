@@ -2,7 +2,8 @@
 
 return [
     'home' => 'Home',
-    'see_more' => 'See More',
+    'see_more' => 'More',
+    'news_nav' => 'News',
     'search' => 'Search',
     'search_placeholder' => 'Search Autoluz news...',
     'search_title' => 'Search News',

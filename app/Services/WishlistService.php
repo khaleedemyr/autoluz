@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\WishlistItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 
 class WishlistService
@@ -16,6 +17,10 @@ class WishlistService
      */
     public function productIds(?User $user, Request $request): array
     {
+        if (! Schema::hasTable('wishlist_items')) {
+            return [];
+        }
+
         return $this->query($user, $request)
             ->pluck('product_id')
             ->map(fn ($id) => (int) $id)
@@ -67,6 +72,12 @@ class WishlistService
 
     public function toggle(?User $user, Request $request, int $productId): bool
     {
+        if (! Schema::hasTable('wishlist_items')) {
+            throw ValidationException::withMessages([
+                'product_id' => 'Wishlist belum siap. Refresh halaman lalu coba lagi.',
+            ]);
+        }
+
         $this->assertWishable($productId);
 
         $existing = $this->query($user, $request)->where('product_id', $productId)->first();
@@ -92,6 +103,9 @@ class WishlistService
 
     public function mergeGuestWishlistIntoUser(User $user, string $guestSessionId): void
     {
+        if (! Schema::hasTable('wishlist_items')) {
+            return;
+        }
         $guestItems = WishlistItem::query()
             ->where('session_id', $guestSessionId)
             ->whereNull('user_id')
