@@ -30,6 +30,7 @@ class DatabaseSeeder extends Seeder
             EventSeeder::class,
             BrandSeeder::class,
             VehicleSeeder::class,
+            RabbitAndWheelsSeeder::class,
         ]);
     }
 }

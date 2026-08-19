@@ -105,12 +105,15 @@ Midtrans Payment Notification URL: `https://autoluz.id/toko/midtrans/notificatio
 
 ## Content Sources
 
-No demo content is seeded. Use:
+No demo article/video content is seeded. Use:
 
 ```bash
 php artisan import:wordpress
 php artisan youtube:sync
+php artisan db:seed --class=RabbitAndWheelsSeeder
 ```
+
+Demo partner store **Rabbit & Wheels** (apparel riding Bandung): 19 produk (jaket MSP, hoodie, kaos, tas, aksesoris), akun seller `seller.rabbit@autoluz.local` / `password`. Etalase: `/toko/m/rabbit-and-wheels`.
 
 WordPress DB fills articles/categories. YouTube channel `apih mototv` fills the video stage.
 
