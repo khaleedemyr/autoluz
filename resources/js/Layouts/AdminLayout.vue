@@ -143,10 +143,13 @@ watch(
             >
                 <div class="border-b border-white/10 px-5 py-5">
                     <div class="flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-3">
+                        <img src="/logo.png" alt="Autoluz" class="h-10 w-10 rounded-[0.8rem] ring-1 ring-white/10" />
                         <div>
                             <div class="font-display text-2xl tracking-[-0.04em]">AUTOLUZ</div>
                             <div class="mt-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-brand">Admin Portal</div>
                         </div>
+                    </div>
                         <button
                             type="button"
                             class="rounded-lg p-1.5 text-white/50 hover:bg-white/10 hover:text-white lg:hidden"

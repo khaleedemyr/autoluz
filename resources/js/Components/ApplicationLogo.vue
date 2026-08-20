@@ -8,55 +8,15 @@ defineProps({
 </script>
 
 <template>
-    <svg
+    <img
         v-if="variant === 'mark'"
-        viewBox="0 0 64 64"
-        xmlns="http://www.w3.org/2000/svg"
-        aria-label="Autoluz"
-        role="img"
-    >
-        <rect width="64" height="64" rx="14" fill="#16181d" />
-        <path
-            d="M18 46 L32 16 L46 46"
-            fill="none"
-            stroke="#FF1E2D"
-            stroke-width="6"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-        />
-        <path
-            d="M24 36 H40"
-            fill="none"
-            stroke="#ffffff"
-            stroke-width="5"
-            stroke-linecap="round"
-        />
-    </svg>
+        src="/logo.png"
+        alt="Autoluz"
+        class="h-full w-full object-contain"
+    />
 
     <div v-else class="inline-flex flex-col items-center text-center" aria-label="Autoluz">
-        <svg
-            class="h-14 w-14"
-            viewBox="0 0 64 64"
-            xmlns="http://www.w3.org/2000/svg"
-            aria-hidden="true"
-        >
-            <rect width="64" height="64" rx="14" fill="#16181d" />
-            <path
-                d="M18 46 L32 16 L46 46"
-                fill="none"
-                stroke="#FF1E2D"
-                stroke-width="6"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-            />
-            <path
-                d="M24 36 H40"
-                fill="none"
-                stroke="#ffffff"
-                stroke-width="5"
-                stroke-linecap="round"
-            />
-        </svg>
+        <img src="/logo.png" alt="" class="h-16 w-16 rounded-[1.1rem] shadow-soft" />
         <span class="mt-3 font-display text-3xl font-bold tracking-[-0.06em] text-charcoal">
             AUTO<span class="text-brand">LUZ</span>
         </span>

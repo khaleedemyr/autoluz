@@ -148,15 +148,22 @@ onUnmounted(() => {
             <div class="container-editorial flex h-[4.25rem] items-center gap-2 lg:h-[4.75rem] lg:gap-6">
                 <Link
                     :href="route('home')"
-                    class="group relative flex shrink-0 flex-col justify-center"
+                    class="group relative flex shrink-0 items-center gap-2.5"
                 >
-                    <span class="font-display text-[1.55rem] leading-none tracking-[-0.04em] sm:text-[1.85rem]">
-                        AUTOLUZ
+                    <img
+                        src="/logo.png"
+                        alt="Autoluz"
+                        class="h-9 w-9 rounded-[0.7rem] ring-1 ring-white/10 sm:h-10 sm:w-10 sm:rounded-[0.8rem]"
+                    />
+                    <span class="flex flex-col justify-center">
+                        <span class="font-display text-[1.35rem] leading-none tracking-[-0.04em] sm:text-[1.65rem]">
+                            AUTOLUZ
+                        </span>
+                        <span class="mt-1 text-[8px] font-semibold uppercase tracking-[0.3em] text-brand sm:text-[9px] sm:tracking-[0.34em]">
+                            Car &amp; Moto
+                        </span>
                     </span>
-                    <span class="mt-1 text-[8px] font-semibold uppercase tracking-[0.3em] text-brand sm:text-[9px] sm:tracking-[0.34em]">
-                        Car &amp; Moto
-                    </span>
-                    <span class="absolute -bottom-1 left-0 h-[2px] w-10 bg-brand transition-all duration-500 ease-editorial group-hover:w-16" />
+                    <span class="absolute -bottom-1 left-12 h-[2px] w-10 bg-brand transition-all duration-500 ease-editorial group-hover:w-16" />
                 </Link>
 
                 <nav

@@ -7,9 +7,9 @@
 
         <title inertia>{{ config('app.name', 'Autoluz') }}</title>
 
-        <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-        <link rel="icon" href="/favicon.png" type="image/png" sizes="512x512">
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+        <link rel="icon" href="/favicon.svg?v=20260820" type="image/svg+xml">
+        <link rel="icon" href="/favicon.png?v=20260820" type="image/png" sizes="512x512">
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=20260820">
         <meta name="theme-color" content="#16181d">
 
         <link rel="preconnect" href="https://fonts.bunny.net" crossorigin>

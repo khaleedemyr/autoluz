@@ -19,8 +19,13 @@ function openSupport() {
     <footer class="mt-8 border-t border-white/10 bg-charcoal text-white">
         <div class="container-editorial grid gap-10 py-16 md:grid-cols-2 xl:grid-cols-4">
             <div>
-                <div class="font-display text-4xl tracking-[-0.04em]">AUTOLUZ</div>
-                <p class="mt-1 text-[10px] font-semibold uppercase tracking-[0.3em] text-brand">Car &amp; Moto</p>
+                <Link :href="route('home')" class="inline-flex items-center gap-3">
+                    <img src="/logo.png" alt="Autoluz" class="h-12 w-12 rounded-[0.9rem] ring-1 ring-white/10" />
+                    <span>
+                        <span class="block font-display text-3xl tracking-[-0.04em]">AUTOLUZ</span>
+                        <span class="mt-1 block text-[10px] font-semibold uppercase tracking-[0.3em] text-brand">Car &amp; Moto</span>
+                    </span>
+                </Link>
                 <p class="mt-4 max-w-sm text-sm leading-relaxed text-white/55">
                     {{ t('footer_tagline') }}
                 </p>
