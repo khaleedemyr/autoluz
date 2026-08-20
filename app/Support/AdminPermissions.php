@@ -45,7 +45,7 @@ class AdminPermissions
             return null;
         }
 
-        if ($name === 'admin.dashboard') {
+        if ($name === 'admin.dashboard' || str_starts_with($name, 'admin.support.')) {
             return 'dashboard';
         }
 

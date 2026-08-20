@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref, watch } from 'vue';
 import { Link, usePage, router } from '@inertiajs/vue3';
+import CommunityPresenceHeartbeat from '@/Components/Community/CommunityPresenceHeartbeat.vue';
 
 defineProps({
     title: { type: String, default: 'Admin' },
@@ -55,6 +56,7 @@ const navGroups = [
         key: 'audiens',
         label: 'Audiens',
         items: [
+            { label: 'Live Support', route: 'admin.support.index', match: 'admin.support.*', permission: 'dashboard' },
             { label: 'Newsletter', route: 'admin.newsletter.index', match: 'admin.newsletter.*', permission: 'newsletter' },
         ],
     },
@@ -70,6 +72,7 @@ const navGroups = [
 
 const permissions = computed(() => page.props.auth?.user?.permissions || []);
 const canSee = (key) => permissions.value.includes('*') || permissions.value.includes(key);
+const supportUnread = computed(() => Number(page.props.support_unread || 0));
 
 function isActive(pattern) {
     return route().current(pattern);
@@ -195,11 +198,18 @@ watch(
                                 v-for="item in group.items"
                                 :key="item.route"
                                 :href="route(item.route)"
-                                class="flex items-center rounded-xl px-3 py-2 text-sm font-medium transition"
+                                class="flex items-center justify-between gap-2 rounded-xl px-3 py-2 text-sm font-medium transition"
                                 :class="isActive(item.match) ? 'bg-brand text-white shadow-sm' : 'text-white/70 hover:bg-white/5 hover:text-white'"
                                 @click="closeMobile"
                             >
-                                {{ item.label }}
+                                <span>{{ item.label }}</span>
+                                <span
+                                    v-if="item.route === 'admin.support.index' && supportUnread"
+                                    class="flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold"
+                                    :class="isActive(item.match) ? 'bg-white/20 text-white' : 'bg-brand text-white'"
+                                >
+                                    {{ supportUnread > 99 ? '99+' : supportUnread }}
+                                </span>
                             </Link>
                         </div>
                     </section>
@@ -245,5 +255,6 @@ watch(
                 </main>
             </div>
         </div>
+        <CommunityPresenceHeartbeat />
     </div>
 </template>

@@ -123,6 +123,17 @@ class HandleInertiaRequests extends Middleware
                     ];
                 }
             },
+            'support_unread' => function () use ($request) {
+                try {
+                    if (! $request->user()?->canAccessAdmin()) {
+                        return 0;
+                    }
+
+                    return app(\App\Services\SupportService::class)->unreadCount();
+                } catch (\Throwable) {
+                    return 0;
+                }
+            },
         ];
     }
 }

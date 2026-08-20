@@ -9,6 +9,10 @@ defineProps({
 });
 
 const { t } = useI18n();
+
+function openSupport() {
+    window.dispatchEvent(new CustomEvent('autoluz-support-open'));
+}
 </script>
 
 <template>
@@ -51,6 +55,13 @@ const { t } = useI18n();
                     <li><Link :href="route('credit.simulate')" class="hover:text-white">{{ t('credit_nav') }}</Link></li>
                     <li><Link :href="route('galleries.index')" class="hover:text-white">{{ t('galleries_nav') }}</Link></li>
                     <li><Link :href="route('search')" class="hover:text-white">{{ t('footer_search') }}</Link></li>
+                    <li><Link :href="route('legal.faq')" class="hover:text-white">{{ t('footer_faq') }}</Link></li>
+                    <li><Link :href="route('legal.privacy')" class="hover:text-white">{{ t('footer_privacy') }}</Link></li>
+                    <li>
+                        <button type="button" class="hover:text-white" @click="openSupport">
+                            {{ t('support_title') }}
+                        </button>
+                    </li>
                 </ul>
             </div>
 
@@ -59,11 +70,14 @@ const { t } = useI18n();
             </div>
         </div>
         <div class="border-t border-white/10 py-5">
-            <div class="container-editorial flex flex-col items-center justify-between gap-3 text-xs text-white/40 md:flex-row">
+            <div class="container-editorial flex flex-col items-center justify-between gap-3 text-xs text-white/55 md:flex-row">
                 <p>&copy; {{ new Date().getFullYear() }} Autoluz Car &amp; Moto</p>
                 <div class="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
-                    <Link :href="route('legal.privacy')" class="transition hover:text-white">{{ t('footer_privacy') }}</Link>
                     <Link :href="route('legal.faq')" class="transition hover:text-white">{{ t('footer_faq') }}</Link>
+                    <Link :href="route('legal.privacy')" class="transition hover:text-white">{{ t('footer_privacy') }}</Link>
+                    <button type="button" class="transition hover:text-white" @click="openSupport">
+                        {{ t('support_title') }}
+                    </button>
                 </div>
             </div>
         </div>

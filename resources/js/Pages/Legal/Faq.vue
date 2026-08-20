@@ -102,12 +102,21 @@ const filteredGroups = computed(() => {
                         {{ page.contact_email }}
                     </a>
                 </p>
-                <Link
-                    :href="route('legal.privacy')"
-                    class="mt-4 inline-flex text-sm font-medium text-brand hover:underline"
-                >
-                    {{ t('footer_privacy') }}
-                </Link>
+                <div class="mt-4 flex flex-wrap gap-4">
+                    <button
+                        type="button"
+                        class="inline-flex text-sm font-medium text-brand hover:underline"
+                        @click="window.dispatchEvent(new CustomEvent('autoluz-support-open'))"
+                    >
+                        {{ t('support_title') }}
+                    </button>
+                    <Link
+                        :href="route('legal.privacy')"
+                        class="inline-flex text-sm font-medium text-brand hover:underline"
+                    >
+                        {{ t('footer_privacy') }}
+                    </Link>
+                </div>
             </div>
         </section>
     </AppLayout>

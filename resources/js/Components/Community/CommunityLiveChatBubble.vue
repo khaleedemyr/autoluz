@@ -47,7 +47,7 @@ onUnmounted(() => clearInterval(timer));
 <template>
     <div
         v-if="authUser && !page.url.startsWith('/komunitas/live-chat')"
-        class="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] right-5 z-40 lg:bottom-5"
+        class="fixed bottom-[calc(8.75rem+env(safe-area-inset-bottom))] right-5 z-40 lg:bottom-[5.25rem]"
     >
         <div
             v-if="open"

@@ -6,6 +6,7 @@ import SiteFooter from '@/Components/Site/SiteFooter.vue';
 import CompareFloatingBar from '@/Components/Site/CompareFloatingBar.vue';
 import CommunityPresenceHeartbeat from '@/Components/Community/CommunityPresenceHeartbeat.vue';
 import CommunityLiveChatBubble from '@/Components/Community/CommunityLiveChatBubble.vue';
+import SupportChatBubble from '@/Components/Site/SupportChatBubble.vue';
 
 const page = usePage();
 const footerCategories = computed(() => {
@@ -38,6 +39,7 @@ const pageKey = computed(() => String(page.url || '').split('?')[0]);
         </main>
         <SiteFooter :categories="footerCategories" />
         <CompareFloatingBar />
+        <SupportChatBubble />
         <template v-if="isAuth">
             <CommunityPresenceHeartbeat />
             <CommunityLiveChatBubble />

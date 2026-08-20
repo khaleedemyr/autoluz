@@ -87,6 +87,12 @@ function closeMega() {
     activeKey.value = null;
 }
 
+function openSupport() {
+    closeMega();
+    mobileOpen.value = false;
+    window.dispatchEvent(new CustomEvent('autoluz-support-open'));
+}
+
 function submitSearch() {
     router.get(route('search'), { q: q.value }, { preserveState: true });
     searchOpen.value = false;
@@ -471,6 +477,27 @@ onUnmounted(() => {
                                 >
                                     {{ t('galleries_nav') }}
                                 </Link>
+                                <Link
+                                    :href="route('legal.faq')"
+                                    class="rounded-full border border-charcoal/15 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] transition hover:border-brand hover:text-brand"
+                                    @click="closeMega"
+                                >
+                                    {{ t('footer_faq') }}
+                                </Link>
+                                <Link
+                                    :href="route('legal.privacy')"
+                                    class="rounded-full border border-charcoal/15 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] transition hover:border-brand hover:text-brand"
+                                    @click="closeMega"
+                                >
+                                    {{ t('footer_privacy') }}
+                                </Link>
+                                <button
+                                    type="button"
+                                    class="rounded-full border border-charcoal/15 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] transition hover:border-brand hover:text-brand"
+                                    @click="openSupport"
+                                >
+                                    {{ t('support_title') }}
+                                </button>
                             </div>
                             <p class="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-400">
                                 {{ t('footer_categories') }}
@@ -629,6 +656,27 @@ onUnmounted(() => {
                 >
                     {{ t('galleries_nav') }}
                 </Link>
+                <Link
+                    :href="route('legal.faq')"
+                    class="rounded-lg px-2 py-3 text-sm font-semibold uppercase tracking-[0.14em] text-white/85"
+                    @click="mobileOpen = false"
+                >
+                    {{ t('footer_faq') }}
+                </Link>
+                <Link
+                    :href="route('legal.privacy')"
+                    class="rounded-lg px-2 py-3 text-sm font-semibold uppercase tracking-[0.14em] text-white/85"
+                    @click="mobileOpen = false"
+                >
+                    {{ t('footer_privacy') }}
+                </Link>
+                <button
+                    type="button"
+                    class="rounded-lg px-2 py-3 text-left text-sm font-semibold uppercase tracking-[0.14em] text-white/85"
+                    @click="openSupport"
+                >
+                    {{ t('support_title') }}
+                </button>
                 <Link
                     v-for="item in items"
                     :key="item.key"

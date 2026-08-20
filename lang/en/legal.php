@@ -53,6 +53,7 @@ return [
                         'items' => [
                             'Newsletter email (optional name).',
                             'Browser push endpoints if you allow notifications.',
+                            'Live support messages, plus the name and email you send to the Autoluz team.',
                         ],
                     ],
                     [
@@ -199,6 +200,10 @@ return [
                     [
                         'q' => 'How do I switch language?',
                         'a' => 'Use the ID / EN switch in the site header. Your language preference is stored in the session.',
+                    ],
+                    [
+                        'q' => 'How do I contact the Autoluz team?',
+                        'a' => 'Use the Live Support button at the bottom-right. Guests enter a name and email; signed-in members can chat straight away. The team replies from the admin inbox.',
                     ],
                 ],
             ],

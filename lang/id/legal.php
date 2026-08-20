@@ -53,6 +53,7 @@ return [
                         'items' => [
                             'Email newsletter (nama opsional).',
                             'Endpoint notifikasi browser jika Anda mengizinkan push notification.',
+                            'Pesan live support, nama, dan email yang Anda kirim ke tim Autoluz.',
                         ],
                     ],
                     [
@@ -199,6 +200,10 @@ return [
                     [
                         'q' => 'Bagaimana mengganti bahasa?',
                         'a' => 'Gunakan sakelar ID / EN di header situs. Preferensi bahasa tersimpan di sesi Anda.',
+                    ],
+                    [
+                        'q' => 'Bagaimana menghubungi tim Autoluz?',
+                        'a' => 'Gunakan tombol Live Support di pojok kanan bawah. Tamu cukup isi nama dan email, member yang sudah login langsung bisa chat. Tim membalas dari dashboard admin.',
                     ],
                 ],
             ],

@@ -18,6 +18,7 @@ use App\Http\Controllers\Admin\ShopCategoryController as AdminShopCategoryContro
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\ShopSettingController as AdminShopSettingController;
 use App\Http\Controllers\Admin\StoreController as AdminStoreController;
+use App\Http\Controllers\Admin\SupportController as AdminSupportController;
 use App\Http\Controllers\ShopCheckoutController;
 use App\Http\Controllers\Seller\DashboardController as SellerDashboardController;
 use App\Http\Controllers\Seller\ProductController as SellerProductController;
@@ -52,6 +53,7 @@ use App\Http\Controllers\ProductReviewController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\MidtransNotificationController;
 use App\Http\Controllers\SitemapController;
+use App\Http\Controllers\SupportController;
 use App\Http\Controllers\CreditSimulationController;
 use App\Http\Controllers\VehicleController;
 use App\Http\Controllers\VehicleCompareController;
@@ -99,6 +101,15 @@ Route::get('/galeri', [GalleryController::class, 'index'])->name('galleries.inde
 Route::get('/galeri/{slug}', [GalleryController::class, 'show'])->name('galleries.show');
 Route::get('/kebijakan-privasi', [LegalController::class, 'privacy'])->name('legal.privacy');
 Route::get('/faq', [LegalController::class, 'faq'])->name('legal.faq');
+Route::get('/dukungan', [SupportController::class, 'current'])
+    ->middleware('throttle:60,1')
+    ->name('support.current');
+Route::get('/dukungan/poll', [SupportController::class, 'poll'])
+    ->middleware('throttle:60,1')
+    ->name('support.poll');
+Route::post('/dukungan', [SupportController::class, 'store'])
+    ->middleware('throttle:20,1')
+    ->name('support.store');
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 
 Route::get('/toko', [ShopController::class, 'index'])->name('shop.index');
@@ -302,6 +313,15 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/comments', [AdminCommentController::class, 'index'])->name('comments.index');
     Route::patch('/comments/{comment}/toggle', [AdminCommentController::class, 'toggle'])->name('comments.toggle');
     Route::delete('/comments/{comment}', [AdminCommentController::class, 'destroy'])->name('comments.destroy');
+
+    Route::get('/support', [AdminSupportController::class, 'index'])->name('support.index');
+    Route::post('/support/{conversation}', [AdminSupportController::class, 'store'])
+        ->middleware('throttle:60,1')
+        ->name('support.store');
+    Route::put('/support/{conversation}', [AdminSupportController::class, 'update'])->name('support.update');
+    Route::get('/support/{conversation}/poll', [AdminSupportController::class, 'poll'])
+        ->middleware('throttle:120,1')
+        ->name('support.poll');
 
     Route::get('/events', [AdminEventController::class, 'index'])->name('events.index');
     Route::get('/events/create', [AdminEventController::class, 'create'])->name('events.create');
