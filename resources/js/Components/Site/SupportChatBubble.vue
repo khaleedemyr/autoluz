@@ -135,7 +135,14 @@ onUnmounted(() => {
         >
             <div class="flex items-start justify-between gap-3 bg-charcoal px-4 py-3 text-white">
                 <div>
-                    <p class="text-[11px] font-semibold uppercase tracking-[0.16em]">{{ t('support_title') }}</p>
+                    <p class="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em]">
+                        <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 13a8 8 0 0116 0" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 13v4a2 2 0 002 2h1a2 2 0 002-2v-3a2 2 0 00-2-2H4" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M20 13v4a2 2 0 01-2 2h-1a2 2 0 01-2-2v-3a2 2 0 012-2h3" />
+                        </svg>
+                        {{ t('support_title') }}
+                    </p>
                     <p class="mt-1 flex items-center gap-1.5 text-xs text-white/65">
                         <span
                             class="h-2 w-2 rounded-full"
@@ -222,7 +229,10 @@ onUnmounted(() => {
             @click="toggle"
         >
             <svg v-if="!open" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 13a8 8 0 0116 0" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 13v4a2 2 0 002 2h1a2 2 0 002-2v-3a2 2 0 00-2-2H4" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M20 13v4a2 2 0 01-2 2h-1a2 2 0 01-2-2v-3a2 2 0 012-2h3" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 21h3a3 3 0 003-3" />
             </svg>
             <svg v-else class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 6l12 12M18 6L6 18" />

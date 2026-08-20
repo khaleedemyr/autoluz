@@ -101,7 +101,7 @@ onUnmounted(() => clearInterval(timer));
             @click="toggle"
         >
             <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M17 20v-1a4 4 0 00-4-4H7a4 4 0 00-4 4v1m14-10a3 3 0 11-6 0 3 3 0 016 0zm6 10v-1a4 4 0 00-3-3.87M16 3.13a3 3 0 010 5.74" />
             </svg>
             <span
                 v-if="onlineCount > 0"
