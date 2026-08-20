@@ -91,6 +91,8 @@ return [
     'footer_explore' => 'Jelajahi',
     'footer_home' => 'Beranda',
     'footer_search' => 'Pencarian',
+    'footer_privacy' => 'Kebijakan Privasi',
+    'footer_faq' => 'FAQ',
     'no_news' => 'Belum ada berita.',
     'home_title' => 'Beranda',
     'lang_id' => 'ID',

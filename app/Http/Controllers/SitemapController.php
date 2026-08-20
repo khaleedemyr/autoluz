@@ -22,6 +22,8 @@ class SitemapController extends Controller
             ['loc' => $base.'/merek', 'changefreq' => 'weekly', 'priority' => '0.6'],
             ['loc' => $base.'/galeri', 'changefreq' => 'daily', 'priority' => '0.6'],
             ['loc' => $base.'/berita', 'changefreq' => 'hourly', 'priority' => '0.8'],
+            ['loc' => $base.'/kebijakan-privasi', 'changefreq' => 'monthly', 'priority' => '0.4'],
+            ['loc' => $base.'/faq', 'changefreq' => 'monthly', 'priority' => '0.4'],
         ];
 
         foreach (Category::query()->active()->orderBy('name')->get() as $category) {

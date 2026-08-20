@@ -58,8 +58,14 @@ const { t } = useI18n();
                 <NewsletterForm />
             </div>
         </div>
-        <div class="border-t border-white/10 py-5 text-center text-xs text-white/40">
-            &copy; {{ new Date().getFullYear() }} Autoluz Car &amp; Moto
+        <div class="border-t border-white/10 py-5">
+            <div class="container-editorial flex flex-col items-center justify-between gap-3 text-xs text-white/40 md:flex-row">
+                <p>&copy; {{ new Date().getFullYear() }} Autoluz Car &amp; Moto</p>
+                <div class="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
+                    <Link :href="route('legal.privacy')" class="transition hover:text-white">{{ t('footer_privacy') }}</Link>
+                    <Link :href="route('legal.faq')" class="transition hover:text-white">{{ t('footer_faq') }}</Link>
+                </div>
+            </div>
         </div>
     </footer>
 </template>

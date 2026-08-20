@@ -38,6 +38,7 @@ use App\Http\Controllers\EventController;
 use App\Http\Controllers\EventShareController;
 use App\Http\Controllers\GalleryController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\LegalController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\NewsletterController;
 use App\Http\Controllers\ProfileController;
@@ -96,6 +97,8 @@ Route::get('/bandingkan/cari', [VehicleCompareController::class, 'search'])
 Route::get('/simulasi-kredit', [CreditSimulationController::class, 'index'])->name('credit.simulate');
 Route::get('/galeri', [GalleryController::class, 'index'])->name('galleries.index');
 Route::get('/galeri/{slug}', [GalleryController::class, 'show'])->name('galleries.show');
+Route::get('/kebijakan-privasi', [LegalController::class, 'privacy'])->name('legal.privacy');
+Route::get('/faq', [LegalController::class, 'faq'])->name('legal.faq');
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 
 Route::get('/toko', [ShopController::class, 'index'])->name('shop.index');

@@ -91,6 +91,8 @@ return [
     'footer_explore' => 'Explore',
     'footer_home' => 'Home',
     'footer_search' => 'Search',
+    'footer_privacy' => 'Privacy Policy',
+    'footer_faq' => 'FAQ',
     'no_news' => 'No news yet.',
     'home_title' => 'Home',
     'lang_id' => 'ID',

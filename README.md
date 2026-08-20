@@ -151,10 +151,11 @@ cp -a ~/domains/autoluz.id/app/public/build ~/domains/autoluz.id/public_html/bui
 
 cd ~/domains/autoluz.id/app
 git pull origin main
-php artisan db:seed --class=RabbitAndWheelsSeeder
 php artisan optimize:clear
 php artisan optimize
 rm -rf ~/domains/autoluz.id/public_html/build
 cp -a ~/domains/autoluz.id/app/public/build ~/domains/autoluz.id/public_html/build
 
 php artisan migrate --force
+php artisan db:seed --class=RabbitAndWheelsSeeder
+php artisan db:seed --class=RabbitAndWheelsSeeder
