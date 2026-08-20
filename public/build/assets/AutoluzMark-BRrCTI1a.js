@@ -1,0 +1,1 @@
+import{K as e,j as t,y as n}from"./app-CMsSpGYK.js";var r=`/build/assets/logo-MjsFub4Y.png`,i=[`src`,`alt`],a={__name:`AutoluzMark`,props:{alt:{type:String,default:`Autoluz`}},setup(a){return(o,s)=>(t(),n(`img`,{src:e(r),alt:a.alt,class:`object-contain`},null,8,i))}};export{r as n,a as t};

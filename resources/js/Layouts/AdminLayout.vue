@@ -1,7 +1,9 @@
 <script setup>
 import { computed, ref, watch } from 'vue';
-import { Link, usePage, router } from '@inertiajs/vue3';
+import { Head, Link, usePage, router } from '@inertiajs/vue3';
 import CommunityPresenceHeartbeat from '@/Components/Community/CommunityPresenceHeartbeat.vue';
+import AutoluzMark from '@/Components/Site/AutoluzMark.vue';
+import logoUrl from '@/brand/logo.png';
 
 defineProps({
     title: { type: String, default: 'Admin' },
@@ -130,6 +132,10 @@ watch(
 
 <template>
     <div class="min-h-screen bg-[#f3f4f6] text-charcoal">
+        <Head>
+            <link rel="icon" :href="logoUrl" type="image/png" />
+            <link rel="apple-touch-icon" :href="logoUrl" />
+        </Head>
         <div
             v-if="mobileOpen"
             class="fixed inset-0 z-40 bg-black/50 lg:hidden"
@@ -144,7 +150,7 @@ watch(
                 <div class="border-b border-white/10 px-5 py-5">
                     <div class="flex items-center justify-between gap-3">
                     <div class="flex items-center gap-3">
-                        <img src="/logo.png" alt="Autoluz" class="h-10 w-10 rounded-[0.8rem] ring-1 ring-white/10" />
+                        <AutoluzMark class="h-10 w-10 rounded-[0.8rem] ring-1 ring-white/10" />
                         <div>
                             <div class="font-display text-2xl tracking-[-0.04em]">AUTOLUZ</div>
                             <div class="mt-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-brand">Admin Portal</div>

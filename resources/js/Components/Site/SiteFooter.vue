@@ -2,6 +2,7 @@
 import { Link } from '@inertiajs/vue3';
 import SocialLinks from '@/Components/Site/SocialLinks.vue';
 import NewsletterForm from '@/Components/Site/NewsletterForm.vue';
+import AutoluzMark from '@/Components/Site/AutoluzMark.vue';
 import { useI18n } from '@/composables/useI18n';
 
 defineProps({
@@ -20,7 +21,7 @@ function openSupport() {
         <div class="container-editorial grid gap-10 py-16 md:grid-cols-2 xl:grid-cols-4">
             <div>
                 <Link :href="route('home')" class="inline-flex items-center gap-3">
-                    <img src="/logo.png" alt="Autoluz" class="h-12 w-12 rounded-[0.9rem] ring-1 ring-white/10" />
+                    <AutoluzMark class="h-12 w-12 rounded-[0.9rem] ring-1 ring-white/10" />
                     <span>
                         <span class="block font-display text-3xl tracking-[-0.04em]">AUTOLUZ</span>
                         <span class="mt-1 block text-[10px] font-semibold uppercase tracking-[0.3em] text-brand">Car &amp; Moto</span>

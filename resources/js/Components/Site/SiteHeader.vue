@@ -6,6 +6,7 @@ import CommunityNotificationBell from '@/Components/Community/CommunityNotificat
 import CartIcon from '@/Components/Site/CartIcon.vue';
 import WishlistIcon from '@/Components/Site/WishlistIcon.vue';
 import AccountMenuLink from '@/Components/Site/AccountMenuLink.vue';
+import AutoluzMark from '@/Components/Site/AutoluzMark.vue';
 import { useI18n } from '@/composables/useI18n';
 
 const page = usePage();
@@ -150,9 +151,7 @@ onUnmounted(() => {
                     :href="route('home')"
                     class="group relative flex shrink-0 items-center gap-2.5"
                 >
-                    <img
-                        src="/logo.png"
-                        alt="Autoluz"
+                    <AutoluzMark
                         class="h-9 w-9 rounded-[0.7rem] ring-1 ring-white/10 sm:h-10 sm:w-10 sm:rounded-[0.8rem]"
                     />
                     <span class="flex flex-col justify-center">

@@ -1,4 +1,6 @@
 <script setup>
+import AutoluzMark from '@/Components/Site/AutoluzMark.vue';
+
 defineProps({
     variant: {
         type: String,
@@ -8,15 +10,13 @@ defineProps({
 </script>
 
 <template>
-    <img
+    <AutoluzMark
         v-if="variant === 'mark'"
-        src="/logo.png"
-        alt="Autoluz"
         class="h-full w-full object-contain"
     />
 
     <div v-else class="inline-flex flex-col items-center text-center" aria-label="Autoluz">
-        <img src="/logo.png" alt="" class="h-16 w-16 rounded-[1.1rem] shadow-soft" />
+        <AutoluzMark alt="" class="h-16 w-16 rounded-[1.1rem] shadow-soft" />
         <span class="mt-3 font-display text-3xl font-bold tracking-[-0.06em] text-charcoal">
             AUTO<span class="text-brand">LUZ</span>
         </span>

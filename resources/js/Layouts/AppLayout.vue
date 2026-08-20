@@ -1,12 +1,13 @@
 <script setup>
 import { computed } from 'vue';
-import { usePage } from '@inertiajs/vue3';
+import { Head, usePage } from '@inertiajs/vue3';
 import SiteHeader from '@/Components/Site/SiteHeader.vue';
 import SiteFooter from '@/Components/Site/SiteFooter.vue';
 import CompareFloatingBar from '@/Components/Site/CompareFloatingBar.vue';
 import CommunityPresenceHeartbeat from '@/Components/Community/CommunityPresenceHeartbeat.vue';
 import CommunityLiveChatBubble from '@/Components/Community/CommunityLiveChatBubble.vue';
 import SupportChatBubble from '@/Components/Site/SupportChatBubble.vue';
+import logoUrl from '@/brand/logo.png';
 
 const page = usePage();
 const footerCategories = computed(() => {
@@ -19,6 +20,10 @@ const pageKey = computed(() => String(page.url || '').split('?')[0]);
 
 <template>
     <div class="flex min-h-screen flex-col pb-[calc(3.5rem+env(safe-area-inset-bottom))] lg:pb-0">
+        <Head>
+            <link rel="icon" :href="logoUrl" type="image/png" />
+            <link rel="apple-touch-icon" :href="logoUrl" />
+        </Head>
         <SiteHeader />
         <!-- Spacer matches fixed header height -->
         <div class="h-[4.25rem] shrink-0 lg:h-[4.75rem]" aria-hidden="true" />
