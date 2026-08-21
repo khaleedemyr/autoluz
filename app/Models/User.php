@@ -12,13 +12,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
+use Laravel\Sanctum\HasApiTokens;
 
 #[Fillable(['name', 'username', 'email', 'password', 'is_admin', 'role_id', 'bio', 'avatar_path'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable;
 
     protected function casts(): array
     {
@@ -244,6 +245,41 @@ class User extends Authenticatable
         }
 
         return $data;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function toAuthArray(): array
+    {
+        $this->loadMissing('ownedStore', 'role');
+
+        return [
+            'id' => $this->id,
+            'name' => $this->name,
+            'username' => $this->username,
+            'email' => $this->email,
+            'bio' => $this->bio,
+            'avatar_url' => $this->avatarUrl(),
+            'is_admin' => $this->canAccessAdmin(),
+            'can_access_seller' => $this->canAccessSeller(),
+            'store' => $this->ownedStore ? [
+                'id' => $this->ownedStore->id,
+                'name' => $this->ownedStore->name,
+                'slug' => $this->ownedStore->slug,
+                'status' => $this->ownedStore->status,
+            ] : null,
+            'unread_notifications' => $this->communityNotifications()->whereNull('read_at')->count(),
+            'unread_messages' => CommunityMessage::query()
+                ->whereNull('read_at')
+                ->where('sender_id', '!=', $this->id)
+                ->whereHas('conversation', function ($q) {
+                    $q->where(function ($inner) {
+                        $inner->where('user_one_id', $this->id)->orWhere('user_two_id', $this->id);
+                    });
+                })
+                ->count(),
+        ];
     }
 
     public static function uniqueUsername(string $seed, ?int $ignoreId = null): string

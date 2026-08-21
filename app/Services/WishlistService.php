@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Product;
 use App\Models\User;
 use App\Models\WishlistItem;
+use App\Support\GuestSession;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -89,7 +90,7 @@ class WishlistService
 
         WishlistItem::query()->create([
             'user_id' => $user?->id,
-            'session_id' => $user ? null : $request->session()->getId(),
+            'session_id' => $user ? null : GuestSession::id($request),
             'product_id' => $productId,
         ]);
 
@@ -142,7 +143,7 @@ class WishlistService
         }
 
         return WishlistItem::query()
-            ->where('session_id', $request->session()->getId())
+            ->where('session_id', GuestSession::id($request))
             ->whereNull('user_id');
     }
 

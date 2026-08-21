@@ -38,7 +38,7 @@ class HomeController extends Controller
     /**
      * @return array<string, mixed>
      */
-    protected function buildPayload(): array
+    public function buildPayload(): array
     {
         $homeVideoLimit = max(4, min(24, (int) config('youtube.homepage_limit', 8)));
         $playlist = YoutubeFeed::playlist();

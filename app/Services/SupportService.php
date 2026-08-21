@@ -6,6 +6,7 @@ use App\Models\Role;
 use App\Models\SupportConversation;
 use App\Models\SupportMessage;
 use App\Models\User;
+use App\Support\GuestSession;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 
@@ -14,7 +15,7 @@ class SupportService
     public function findForRequest(Request $request): ?SupportConversation
     {
         $user = $request->user();
-        $sessionId = (string) $request->session()->getId();
+        $sessionId = GuestSession::id($request);
 
         $query = SupportConversation::query();
 
@@ -59,7 +60,7 @@ class SupportService
 
         return SupportConversation::query()->create([
             'user_id' => $user?->id,
-            'session_id' => (string) $request->session()->getId(),
+            'session_id' => GuestSession::id($request),
             'visitor_name' => $visitor['name'] ?? $user?->name,
             'visitor_email' => $visitor['email'] ?? $user?->email,
             'status' => SupportConversation::STATUS_OPEN,

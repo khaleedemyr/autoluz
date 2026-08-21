@@ -10,11 +10,11 @@ class ShopSchema
 {
     public static function ensure(): void
     {
-        if (Cache::get('shop.schema.ready.v2')) {
-            return;
-        }
-
         try {
+            if (Cache::get('shop.schema.ready.v2')) {
+                return;
+            }
+
             if (! Schema::hasTable('products') || ! Schema::hasTable('orders')) {
                 return;
             }
@@ -24,7 +24,10 @@ class ShopSchema
             static::ensureDistrictColumns();
             Cache::put('shop.schema.ready.v2', true, now()->addDay());
         } catch (\Throwable) {
-            Cache::forget('shop.schema.ready.v2');
+            try {
+                Cache::forget('shop.schema.ready.v2');
+            } catch (\Throwable) {
+            }
         }
     }
 

@@ -6,6 +6,7 @@ use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\ProductVariant;
 use App\Models\User;
+use App\Support\GuestSession;
 use App\Support\MediaUrl;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -20,7 +21,7 @@ class CartService
         }
 
         return Cart::query()
-            ->where('session_id', $request->session()->getId())
+            ->where('session_id', GuestSession::id($request))
             ->whereNull('user_id')
             ->first();
     }
@@ -36,7 +37,7 @@ class CartService
             return Cart::query()->firstOrCreate(['user_id' => $user->id]);
         }
 
-        return Cart::query()->create(['session_id' => $request->session()->getId()]);
+        return Cart::query()->create(['session_id' => GuestSession::id($request)]);
     }
 
     /**
