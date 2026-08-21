@@ -43,6 +43,20 @@ class CatalogController extends Controller
         ]);
     }
 
+    public function shareEvent(Request $request, string $slug): JsonResponse
+    {
+        $request->validate([
+            'channel' => ['nullable', 'string', 'max:40'],
+        ]);
+
+        $event = Event::query()->published()->where('slug', $slug)->firstOrFail();
+        $event->increment('shares_count');
+
+        return response()->json([
+            'shares_count' => (int) $event->fresh()->shares_count,
+        ]);
+    }
+
     public function brands(): JsonResponse
     {
         $map = fn (Brand $brand) => $brand->toCardArray();

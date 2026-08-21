@@ -93,6 +93,20 @@ class ArticleController extends Controller
         ]);
     }
 
+    public function share(Request $request, string $slug): JsonResponse
+    {
+        $request->validate([
+            'channel' => ['nullable', 'string', 'max:40'],
+        ]);
+
+        $article = Article::query()->published()->where('slug', $slug)->firstOrFail();
+        $article->increment('shares_count');
+
+        return response()->json([
+            'shares_count' => (int) $article->fresh()->shares_count,
+        ]);
+    }
+
     public function category(string $slug): JsonResponse
     {
         $category = Category::query()->active()->where('slug', $slug)->firstOrFail();

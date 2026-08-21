@@ -21,6 +21,7 @@ Route::prefix('v1')->group(function () {
     Route::get('/articles', [ArticleController::class, 'index']);
     Route::get('/articles/{slug}', [ArticleController::class, 'show']);
     Route::post('/articles/{slug}/comments', [ArticleController::class, 'comments'])->middleware('throttle:8,1');
+    Route::post('/articles/{slug}/share', [ArticleController::class, 'share'])->middleware('throttle:30,1');
     Route::get('/categories/{slug}', [ArticleController::class, 'category']);
     Route::get('/search', [ArticleController::class, 'search']);
 
@@ -42,6 +43,7 @@ Route::prefix('v1')->group(function () {
 
     Route::get('/events', [CatalogController::class, 'events']);
     Route::get('/events/{slug}', [CatalogController::class, 'event']);
+    Route::post('/events/{slug}/share', [CatalogController::class, 'shareEvent'])->middleware('throttle:30,1');
     Route::get('/brands', [CatalogController::class, 'brands']);
     Route::get('/brands/{slug}', [CatalogController::class, 'brand']);
     Route::get('/brands/{brandSlug}/vehicles/{vehicleSlug}', [CatalogController::class, 'vehicle']);
